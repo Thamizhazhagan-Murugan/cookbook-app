@@ -65,7 +65,11 @@ jobs:
           fi
 
       - name: Generate the native Android project
-        run: npx expo prebuild --platform android --no-install
+        run: |
+          npx expo prebuild --platform android --no-install
+          # real phones only (no x86 emulator builds) — roughly halves the APK
+          sed -i 's/^reactNativeArchitectures=.*/reactNativeArchitectures=armeabi-v7a,arm64-v8a/' android/gradle.properties
+          grep reactNativeArchitectures android/gradle.properties
 
       # Optional: your own signing key. Add secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
       # ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD. Without them the APK is signed with the standard
