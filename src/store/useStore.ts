@@ -6,7 +6,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { buildGroceryList, carryOverCandidates, pantryItemFrom } from '@/lib/grocery';
 import type { CookProgress, DayKey, Meal, PantryItem, Profile, SlotKey, Timer, Week } from '@/lib/types';
-import { emptyWeek, weekIdFor } from '@/lib/week';
+import { emptyWeek, mealPrepDays, weekIdFor } from '@/lib/week';
 
 export type AccountInfo = { uid: string; isAnonymous: boolean; name?: string; email?: string; photo?: string };
 
@@ -38,6 +38,8 @@ export type AppState = {
   setMeal: (weekId: string, day: DayKey, slot: SlotKey, meal: Meal | null) => void;
   setMealServings: (weekId: string, day: DayKey, slot: SlotKey, servings: number) => void;
   repeatMeal: (weekId: string, from: { day: DayKey; slot: SlotKey }, days: DayKey[]) => void;
+  /** Meal-prep: put `servings` single-serving meals of a recipe on consecutive free days. Returns the days used. */
+  placeMealPrep: (weekId: string, from: { day: DayKey; slot: SlotKey }, recipeId: string, servings: number) => DayKey[];
   copyWeek: (fromId: string, toId: string) => void;
   clearWeek: (weekId: string) => void;
   // groceries
@@ -53,6 +55,7 @@ export type AppState = {
   pantryRemove: (key: string) => void;
   pantryClear: () => void;
   setSlots: (slots: SlotKey[]) => void;
+  setMealPrep: (on: boolean) => void;
   saveCooking: (p: CookProgress) => void;
   clearCooking: (recipeId: string) => void;
   logCook: (recipeId: string) => void;
@@ -122,6 +125,13 @@ export const useStore = create<AppState>()(
             if (!m) return;
             for (const d of days) w.days[d][from.slot] = { ...m };
           }),
+        placeMealPrep: (weekId, from, recipeId, servings) => {
+          const days = mealPrepDays(get().weeks[weekId], from.day, from.slot, servings);
+          updWeek(weekId, (w) => {
+            for (const d of days) w.days[d][from.slot] = { recipeId, servings: 1 };
+          });
+          return days;
+        },
         copyWeek: (fromId, toId) =>
           set((s) => {
             const src = s.weeks[fromId];
@@ -183,6 +193,7 @@ export const useStore = create<AppState>()(
         pantryRemove: (key) => updProfile((p) => delete p.pantry[key]),
         pantryClear: () => updProfile((p) => (p.pantry = {})),
         setSlots: (slots) => updProfile((p) => (p.settings.slots = slots)),
+        setMealPrep: (on) => updProfile((p) => (p.settings.mealPrep = on)),
         saveCooking: (prog) => updProfile((p) => (p.cooking[prog.recipeId] = { ...prog, updatedAt: now() })),
         clearCooking: (recipeId) => updProfile((p) => delete p.cooking[recipeId]),
         logCook: (recipeId) =>

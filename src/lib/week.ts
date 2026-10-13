@@ -96,3 +96,26 @@ export function servingsByRecipe(week: Week | undefined): Record<string, number>
 export function countMeals(week: Week | undefined): number {
   return mealsOf(week).length;
 }
+
+/**
+ * Meal-prep placement: starting at `from`, walk forward through the week and return the days
+ * (same slot) that a batch of `servings` single-serving meals would occupy. The start day is
+ * always included (it gets replaced); later days are skipped when that slot is already taken.
+ */
+export function mealPrepDays(week: Week | undefined, from: DayKey, slot: SlotKey, servings: number): DayKey[] {
+  const out: DayKey[] = [];
+  const start = DAY_KEYS.indexOf(from);
+  for (let i = start; i < DAY_KEYS.length && out.length < Math.max(1, servings); i++) {
+    const d = DAY_KEYS[i];
+    if (d === from || !week?.days[d]?.[slot]) out.push(d);
+  }
+  return out;
+}
+
+export function dayRangeLabel(days: DayKey[]): string {
+  if (!days.length) return '';
+  if (days.length === 1) return DAY_LABELS[days[0]];
+  const idx = days.map((d) => DAY_KEYS.indexOf(d));
+  const contiguous = idx.every((v, i) => i === 0 || v === idx[i - 1] + 1);
+  return contiguous ? `${DAY_LABELS[days[0]]}–${DAY_LABELS[days[days.length - 1]]}` : days.map((d) => DAY_LABELS[d]).join(', ');
+}

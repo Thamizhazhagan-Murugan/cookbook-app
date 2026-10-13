@@ -13,7 +13,7 @@ import * as haptics from '@/lib/haptics';
 import { ingredientLine } from '@/lib/quantities';
 import { RECIPE_BY_ID, minsText } from '@/lib/recipes';
 import { DAY_KEYS, SLOT_KEYS, type DayKey, type Macros, type SlotKey } from '@/lib/types';
-import { DAY_LABELS, SLOT_LABELS, dayDate, todayKey, weekIdFor, weekRangeLabel } from '@/lib/week';
+import { DAY_LABELS, SLOT_LABELS, dayDate, dayRangeLabel, mealPrepDays, todayKey, weekIdFor, weekRangeLabel } from '@/lib/week';
 import { useStore } from '@/store/useStore';
 import { radius, useTheme } from '@/theme';
 
@@ -27,12 +27,15 @@ export default function RecipeScreen() {
   const progress = useStore((s) => s.profile.cooking[id]);
   const cookLog = useStore((s) => s.profile.cookLog);
   const weekId = useStore((s) => s.currentWeekId);
-  const { toggleFavorite, saveCooking, clearCooking, addTimer, setMeal, showToast } = useStore();
+  const { toggleFavorite, saveCooking, clearCooking, addTimer, setMeal, placeMealPrep, showToast } = useStore();
+  const mealPrepDefault = useStore((s) => s.profile.settings.mealPrep !== false);
   const [servings, setServings] = useState<number>(progress?.servings ?? r?.servings ?? 1);
   const [plan, setPlan] = useState(false);
   const [pDay, setPDay] = useState<DayKey>(todayKey());
   const [pSlot, setPSlot] = useState<SlotKey>('dinner');
   const [pWeek, setPWeek] = useState<string>(weekId);
+  const [spread, setSpread] = useState<boolean>(mealPrepDefault && (r?.servings ?? 1) > 1);
+  const pWeekData = useStore((s) => s.weeks[pWeek]);
 
   const cooked = useMemo(() => cookLog.filter((e) => e.recipeId === id), [cookLog, id]);
   if (!r) {
@@ -44,6 +47,7 @@ export default function RecipeScreen() {
   }
   const base = r.servings || 0;
   const f = base ? servings / base : 1;
+  const spreadDays = spread ? mealPrepDays(pWeekData, pDay, pSlot, servings) : [pDay];
   const ticks = progress?.ticks || {};
   const tick = (k: string) => {
     saveCooking({ recipeId: r.id, step: progress?.step ?? 0, servings, startedAt: progress?.startedAt ?? Date.now(), updatedAt: Date.now(), ticks: { ...ticks, [k]: !ticks[k] } });
@@ -281,19 +285,32 @@ export default function RecipeScreen() {
             ))}
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <T v="body" style={{ flex: 1 }}>
-              Servings for that meal
-            </T>
+            <View style={{ flex: 1 }}>
+              <T v="body">{spread ? 'Servings to cook' : 'Servings for that meal'}</T>
+              {spread ? (
+                <T v="tiny" color="muted">
+                  One per day: {dayRangeLabel(spreadDays)} {SLOT_LABELS[pSlot].toLowerCase()}
+                  {spreadDays.length < servings ? ` · ${servings - spreadDays.length} left over` : ''}
+                </T>
+              ) : null}
+            </View>
             <Stepper compact value={Math.max(1, Math.min(servings, 40))} onChange={setServings} />
           </View>
+          {base > 1 ? <Chip label="Meal prep — spread across days" icon={spread ? 'checkmark' : 'layers-outline'} on={spread} tone="basil" onPress={() => setSpread((v) => !v)} /> : null}
           <Button
-            label={`Add to ${DAY_LABELS[pDay]} ${SLOT_LABELS[pSlot].toLowerCase()}`}
+            label={spread ? `Add to ${dayRangeLabel(spreadDays)} ${SLOT_LABELS[pSlot].toLowerCase()}` : `Add to ${DAY_LABELS[pDay]} ${SLOT_LABELS[pSlot].toLowerCase()}`}
             kind="primary"
             onPress={() => {
-              setMeal(pWeek, pDay, pSlot, { recipeId: r.id, servings: Math.max(1, servings) });
+              if (spread) {
+                const days = placeMealPrep(pWeek, { day: pDay, slot: pSlot }, r.id, servings);
+                if (days.length < servings) setMeal(pWeek, days[days.length - 1], pSlot, { recipeId: r.id, servings: 1 + servings - days.length });
+                showToast(`Added to ${dayRangeLabel(days)} ${SLOT_LABELS[pSlot].toLowerCase()}`, { label: 'See plan', href: '/' });
+              } else {
+                setMeal(pWeek, pDay, pSlot, { recipeId: r.id, servings: Math.max(1, servings) });
+                showToast(`Added to ${DAY_LABELS[pDay]} ${SLOT_LABELS[pSlot].toLowerCase()}`, { label: 'See plan', href: '/' });
+              }
               setPlan(false);
               haptics.success();
-              showToast(`Added to ${DAY_LABELS[pDay]} ${SLOT_LABELS[pSlot].toLowerCase()}`, { label: 'See plan', href: '/' });
             }}
           />
         </View>

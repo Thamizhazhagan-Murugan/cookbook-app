@@ -4,7 +4,7 @@ import { RECIPES, RECIPE_BY_ID, filterRecipes } from '../recipes';
 import { coverage, explain, rankSuggestions } from '../suggest';
 import { clockText, timersIn } from '../timers';
 import type { Week } from '../types';
-import { emptyWeek, mealsOf, servingsByRecipe, shiftWeek, weekIdFor, weekRangeLabel } from '../week';
+import { dayRangeLabel, emptyWeek, mealPrepDays, mealsOf, servingsByRecipe, shiftWeek, weekIdFor, weekRangeLabel } from '../week';
 
 describe('data', () => {
   it('loads all 271 recipes with ingredients, steps and photos keys', () => {
@@ -57,6 +57,18 @@ describe('week', () => {
     expect(shiftWeek('2026-10-12', 1)).toBe('2026-10-19');
     expect(weekRangeLabel('2026-10-12')).toBe('Oct 12 – 18');
     expect(weekRangeLabel('2026-10-26')).toBe('Oct 26 – Nov 1');
+  });
+  it('spreads a meal-prep batch over free days', () => {
+    const w = emptyWeek('2026-10-12');
+    expect(mealPrepDays(w, 'mon', 'dinner', 4)).toEqual(['mon', 'tue', 'wed', 'thu']);
+    w.days.tue.dinner = { recipeId: 'cb-5', servings: 1 }; // taken -> skipped
+    expect(mealPrepDays(w, 'mon', 'dinner', 4)).toEqual(['mon', 'wed', 'thu', 'fri']);
+    expect(mealPrepDays(w, 'tue', 'dinner', 2)).toEqual(['tue', 'wed']); // start day is always replaced
+    expect(mealPrepDays(w, 'sat', 'dinner', 5)).toEqual(['sat', 'sun']); // week ends
+    expect(mealPrepDays(w, 'mon', 'lunch', 1)).toEqual(['mon']);
+    expect(dayRangeLabel(['mon', 'tue', 'wed'])).toBe('Mon–Wed');
+    expect(dayRangeLabel(['mon', 'wed'])).toBe('Mon, Wed');
+    expect(dayRangeLabel(['fri'])).toBe('Fri');
   });
   it('lists meals and servings', () => {
     const w = emptyWeek('2026-10-12');

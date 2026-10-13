@@ -82,7 +82,7 @@ export type Profile = {
   pantry: Record<string, PantryItem>;
   cooking: Record<string, CookProgress>;
   cookLog: CookLogEntry[];
-  settings: { slots: SlotKey[] };
+  settings: { slots: SlotKey[]; mealPrep?: boolean };
   updatedAt: number;
 };
 

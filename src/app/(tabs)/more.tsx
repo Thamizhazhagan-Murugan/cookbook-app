@@ -46,6 +46,8 @@ export default function MoreScreen() {
   const weeks = useStore((s) => s.weeks);
   const slots = useStore((s) => s.profile.settings.slots);
   const setSlots = useStore((s) => s.setSlots);
+  const mealPrep = useStore((s) => s.profile.settings.mealPrep !== false);
+  const setMealPrep = useStore((s) => s.setMealPrep);
   const pastWeeks = Object.values(weeks).filter((w) => countMeals(w) > 0).length;
   const inProgress = Object.values(cooking).sort((a, b) => b.updatedAt - a.updatedAt);
   const recent = cookLog.slice(0, 5);
@@ -89,6 +91,16 @@ export default function MoreScreen() {
           </View>
         </View>
       ) : null}
+
+      <View>
+        <T v="h2" style={{ marginBottom: 4 }}>
+          Meal prep
+        </T>
+        <T v="small" color="muted" style={{ marginBottom: 8 }}>
+          When on, picking a recipe fills the following days with it — one serving per day, as many days as the batch makes.
+        </T>
+        <Chip label={mealPrep ? 'Meal-prep mode on' : 'Meal-prep mode off'} icon={mealPrep ? 'checkmark' : 'layers-outline'} on={mealPrep} tone="basil" onPress={() => setMealPrep(!mealPrep)} />
+      </View>
 
       <View>
         <T v="h2" style={{ marginBottom: 4 }}>
