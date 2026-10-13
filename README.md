@@ -7,9 +7,9 @@ A mobile meal-planning app built around all 271 recipes from *The Meal Prep Cook
 - **Grocery list** — every ingredient from the week's meals merged into one list, quantities summed and scaled to the servings you planned, grouped by aisle. Items already in your pantry are skipped.
 - **Pantry** — spices, sauces and other staples you tick off while shopping are remembered, so next week's list doesn't ask you to buy paprika again. Perishables (meat, produce, dairy) are never carried over.
 - **Recipe guide** — scalable ingredients with tick boxes, numbered method, tap any "8 minutes" in a step to start a kitchen timer. **Cook mode** shows one step at a time with big type and keeps the screen awake; progress is saved so you can leave and **resume** later, or **clear** it.
-- **Cloud backup (Firebase)** — past weeks, pantry, favourites and cooking progress are stored in Firestore under your own anonymous account and sync between devices. Works offline; without a Firebase config everything is still saved on the phone.
+- **Cloud backup (Firebase) + Google sign-in** — past weeks, pantry, favourites and cooking progress are stored in Firestore. You start on an anonymous device account; *Continue with Google* upgrades it so the same data follows you to any phone. Works offline; without a Firebase config everything is still saved on the phone.
 
-Built with **TypeScript + React Native (Expo SDK 57)**, Expo Router, Zustand, Firebase JS SDK, Reanimated, expo-haptics, expo-keep-awake.
+Built with **TypeScript + React Native (Expo SDK 57)**, Expo Router, Zustand, Firebase JS SDK (Auth + Firestore), @react-native-google-signin, Reanimated, expo-haptics, expo-keep-awake.
 
 ---
 
@@ -29,16 +29,35 @@ Edits you make to the code reload on the phone instantly.
 
 To try it in a browser instead: `npx expo start --web`.
 
-## 2. Turn on cloud backup (Firebase)
+## 2. Turn on cloud backup (Firebase) + Google sign-in
 
 The app runs in local-only mode until you add a Firebase project. It's free (Spark plan).
 
+### 2a. Firebase project and database
+
 1. Go to https://console.firebase.google.com → **Add project** (any name, Analytics not needed).
-2. **Build → Authentication → Get started → Sign-in method → Anonymous → Enable.** (No accounts or passwords; each phone gets its own anonymous id, which is what the data is keyed by.)
+2. **Build → Authentication → Get started → Sign-in method** → enable **Anonymous** *and* **Google** (for Google, pick a support email and save).
 3. **Build → Firestore Database → Create database → Production mode** → pick the region closest to you (e.g. `northamerica-northeast1` Montréal).
-4. In Firestore, open the **Rules** tab, replace the contents with the file `firestore.rules` from this project and **Publish**. That rule lets each user read/write only their own `users/{uid}/…` documents.
-5. **Project settings (gear icon) → Your apps → Web app (`</>`) → Register** → copy the `firebaseConfig` object.
-6. Paste it into **`src/firebaseConfig.ts`**, replacing the placeholder values. Save, and the app reconnects — the *Pantry & more* tab shows "Cloud backup (Firebase) · Synced".
+4. In Firestore open the **Rules** tab, replace the contents with the file `firestore.rules` from this project and **Publish**. That rule lets each user read/write only their own `users/{uid}/…` documents.
+5. **Project settings (gear) → Your apps → Web app (`</>`) → Register** → copy the `firebaseConfig` object.
+6. Paste it into **`src/firebaseConfig.ts`**. From now on everything syncs under an anonymous per-device account, and the *Pantry & more* tab shows "Device account · Synced".
+
+### 2b. Google sign-in (keeps your data when you change phones)
+
+Google's native sign-in can't run inside Expo Go, so this part works in the **installed app** (step 3) and on the web (`npx expo start --web`).
+
+1. **Authentication → Sign-in method → Google → Web SDK configuration** → copy the **Web client ID** into `googleWebClientId` in `src/firebaseConfig.ts`.
+2. Register the Android app: **Project settings → Your apps → Add app → Android**, package name **`com.thamizh.cookbook`**.
+   - It asks for a **SHA-1**. Get it from EAS: `eas credentials -p android` → choose *production* (or *preview*) → "Keystore: Set up / View" → copy the SHA-1 fingerprint. (If you haven't built yet, run `eas build -p android --profile preview` once first — EAS creates the keystore.)
+   - Download **`google-services.json`** and put it in the project root (next to `package.json`). It's git-ignored; `app.config.js` picks it up automatically and enables the native Google Sign-In plugin.
+3. Rebuild: `eas build -p android --profile preview`, install the APK, open **Pantry & more → Continue with Google**.
+
+What happens on sign-in:
+- First time: your anonymous device account is **upgraded in place** — same ID, nothing moves.
+- On a second phone where the Google account already has data: the phone's local plan, pantry and favourites are **merged** into the account (newer week wins per week; pantry, favourites and cook log are unioned) and everything syncs from then on.
+- **Sign out** keeps your data in the cloud and starts the phone fresh.
+
+(iOS: also add an iOS app in Firebase, download `GoogleService-Info.plist` into the project root, then `eas build -p ios`.)
 
 Data layout in Firestore:
 
@@ -48,8 +67,6 @@ users/{uid}/weeks/{YYYY-MM-DD}   one document per planned week (Monday date), in
 ```
 
 Sync is last-write-wins by `updatedAt`, pushed a moment after each change and pulled live from the server.
-
-**Moving to a new phone:** anonymous accounts are per-install. If you want the same data on two phones, the simplest route is to add Google sign-in in Firebase and link the anonymous account — ask and I'll wire it up. (For one phone, the backup already protects you against reinstalling: the id is restored from Firebase's persisted session.)
 
 ## 3. Install it as a real app (APK)
 
@@ -88,12 +105,14 @@ src/lib/                 pure logic, unit-tested
   suggest.ts             overlap scoring for the smart picker
   quantities.ts          fraction formatting, scaling, unit sums
   week.ts, timers.ts, recipes.ts, types.ts
-  firebase.ts, sync.ts   cloud backup
+  firebase.ts, sync.ts   cloud backup (follows the signed-in account)
+  auth.ts, merge.ts      Google sign-in (link or switch + merge)
 src/store/useStore.ts    app state (Zustand), persisted with AsyncStorage
-src/components/          UI building blocks (ui.tsx, RecipeCard, Sheet, TimerDock, Toast, TimerChips)
+src/components/          UI building blocks (ui.tsx, RecipeCard, Sheet, TimerDock, Toast, TimerChips, AccountCard)
 src/data/                recipes.json (parsed from the two PDFs), staples.json, photos.ts
 assets/photos/           one photo per recipe
-src/firebaseConfig.ts    ← paste your Firebase config here
+src/firebaseConfig.ts    ← paste your Firebase config + Google Web client ID here
+app.config.js            enables the Google Sign-In plugin when google-services.json is present
 firestore.rules          ← paste into Firestore → Rules
 ```
 

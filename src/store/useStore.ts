@@ -8,10 +8,13 @@ import { buildGroceryList, carryOverCandidates, pantryItemFrom } from '@/lib/gro
 import type { CookProgress, DayKey, Meal, PantryItem, Profile, SlotKey, Timer, Week } from '@/lib/types';
 import { emptyWeek, weekIdFor } from '@/lib/week';
 
+export type AccountInfo = { uid: string; isAnonymous: boolean; name?: string; email?: string; photo?: string };
+
 export type SyncState = {
   mode: 'local' | 'cloud';
   status: 'idle' | 'connecting' | 'online' | 'offline' | 'error';
   uid?: string;
+  user?: AccountInfo;
   lastSync?: number;
   error?: string;
 };
@@ -67,6 +70,7 @@ export type AppState = {
   applyRemoteWeek: (w: Week) => void;
   applyRemoteProfile: (p: Profile) => void;
   replaceAll: (data: { weeks: Record<string, Week>; profile: Profile }) => void;
+  resetLocal: () => void;
 };
 
 const now = () => Date.now();
@@ -229,6 +233,7 @@ export const useStore = create<AppState>()(
         applyRemoteWeek: (w) => set((s) => ({ weeks: { ...s.weeks, [w.id]: w } })),
         applyRemoteProfile: (p) => set({ profile: { ...defaultProfile(), ...p } }),
         replaceAll: (data) => set({ weeks: data.weeks, profile: { ...defaultProfile(), ...data.profile } }),
+        resetLocal: () => set({ weeks: {}, profile: defaultProfile(), currentWeekId: weekIdFor() }),
       };
     },
     {

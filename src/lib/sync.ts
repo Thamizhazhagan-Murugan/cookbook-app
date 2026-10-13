@@ -1,10 +1,13 @@
 // Cloud sync: mirrors weeks + profile to Firestore under users/{uid}/…
-// Strategy: local-first, last-write-wins by `updatedAt`. Remote changes newer than local are
-// applied locally; local changes are pushed (debounced). Nothing here blocks the UI.
+// Local-first, last-write-wins by `updatedAt`. Follows the signed-in account: when the user
+// upgrades to Google (same uid) nothing changes; when they switch to an existing Google
+// account, the phone's data is merged into it first.
 import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
-import { collection, doc, onSnapshot, setDoc, type Firestore } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, onSnapshot, setDoc, type Firestore } from 'firebase/firestore';
 
+import { accountInfo, takeMergeFlag } from './auth';
 import { getFirebase } from './firebase';
+import { hasLocalData, mergeProfiles, mergeWeeks } from './merge';
 import type { Profile, Week } from './types';
 import { useStore } from '@/store/useStore';
 
@@ -19,13 +22,20 @@ export function startSync(): () => void {
   }
   store.getState().setSync({ mode: 'cloud', status: 'connecting' });
 
-  const unsubs: (() => void)[] = [];
+  let current: { uid: string; unsubs: (() => void)[]; pending: Record<string, ReturnType<typeof setTimeout>> } | null = null;
   const pushed: Record<string, number> = {}; // docId -> updatedAt last pushed or received
-  const pending: Record<string, ReturnType<typeof setTimeout>> = {};
 
-  const schedulePush = (db: Firestore, uid: string, id: string, data: Week | Profile, path: string[]) => {
-    clearTimeout(pending[id]);
-    pending[id] = setTimeout(async () => {
+  const detach = () => {
+    if (!current) return;
+    current.unsubs.forEach((u) => u());
+    Object.values(current.pending).forEach(clearTimeout);
+    current = null;
+  };
+
+  const schedulePush = (db: Firestore, id: string, data: Week | Profile, path: string[]) => {
+    if (!current) return;
+    clearTimeout(current.pending[id]);
+    current.pending[id] = setTimeout(async () => {
       try {
         await setDoc(doc(db, ...(path as [string, ...string[]])), strip(data));
         pushed[id] = data.updatedAt;
@@ -36,13 +46,50 @@ export function startSync(): () => void {
     }, 700);
   };
 
-  const attach = (uid: string) => {
-    const db = fb.db;
+  /** One-off: fold this phone's data into the account's data, write it back, adopt it locally. */
+  const migrate = async (db: Firestore, uid: string) => {
+    const s = store.getState();
+    if (!hasLocalData(s.weeks, s.profile)) return;
     const profileRef = doc(db, 'users', uid, 'state', 'profile');
     const weeksRef = collection(db, 'users', uid, 'weeks');
+    const [p, w] = await Promise.all([getDoc(profileRef), getDocs(weeksRef)]);
+    const remoteProfile = p.exists() ? (p.data() as Profile) : null;
+    const remoteWeeks = w.docs.map((d) => d.data() as Week);
+    const weeks = mergeWeeks(s.weeks, remoteWeeks);
+    const profile = mergeProfiles(s.profile, remoteProfile);
+    profile.updatedAt = Date.now();
+    const writes: Promise<unknown>[] = [setDoc(profileRef, strip(profile))];
+    pushed.profile = profile.updatedAt;
+    for (const wk of Object.values(weeks)) {
+      const remote = remoteWeeks.find((r) => r.id === wk.id);
+      if (!remote || remote.updatedAt !== wk.updatedAt) writes.push(setDoc(doc(db, 'users', uid, 'weeks', wk.id), strip(wk)));
+      pushed[wk.id] = wk.updatedAt;
+    }
+    await Promise.all(writes);
+    s.replaceAll({ weeks, profile });
+  };
+
+  const attach = async (uid: string) => {
+    detach();
+    current = { uid, unsubs: [], pending: {} };
+    const db = fb.db;
+    for (const k of Object.keys(pushed)) delete pushed[k];
+
+    if (takeMergeFlag()) {
+      try {
+        await migrate(db, uid);
+      } catch (e) {
+        store.getState().setSync({ status: 'error', error: `Merge failed: ${(e as Error).message}` });
+      }
+    }
+    if (!current || current.uid !== uid) return; // account changed while merging
+
+    const profileRef = doc(db, 'users', uid, 'state', 'profile');
+    const weeksRef = collection(db, 'users', uid, 'weeks');
+    const profilePath = ['users', uid, 'state', 'profile'];
 
     // remote -> local
-    unsubs.push(
+    current.unsubs.push(
       onSnapshot(
         profileRef,
         (snap) => {
@@ -53,17 +100,17 @@ export function startSync(): () => void {
               pushed.profile = remote.updatedAt;
               s.applyRemoteProfile(remote);
             } else if ((s.profile.updatedAt || 0) > (remote.updatedAt || 0) && pushed.profile !== s.profile.updatedAt) {
-              schedulePush(db, uid, 'profile', s.profile, ['users', uid, 'state', 'profile']);
+              schedulePush(db, 'profile', s.profile, profilePath);
             }
           } else if (s.profile.updatedAt) {
-            schedulePush(db, uid, 'profile', s.profile, ['users', uid, 'state', 'profile']);
+            schedulePush(db, 'profile', s.profile, profilePath);
           }
           s.setSync({ status: 'online', lastSync: Date.now() });
         },
         (e) => store.getState().setSync({ status: 'error', error: e.message })
       )
     );
-    unsubs.push(
+    current.unsubs.push(
       onSnapshot(
         weeksRef,
         (qs) => {
@@ -77,11 +124,10 @@ export function startSync(): () => void {
               pushed[remote.id] = remote.updatedAt;
               s.applyRemoteWeek(remote);
             } else if ((local.updatedAt || 0) > (remote.updatedAt || 0) && pushed[remote.id] !== local.updatedAt) {
-              schedulePush(db, uid, remote.id, local, ['users', uid, 'weeks', remote.id]);
+              schedulePush(db, remote.id, local, ['users', uid, 'weeks', remote.id]);
             }
           });
-          // weeks that exist only locally
-          for (const w of Object.values(store.getState().weeks)) if (!seen.has(w.id) && w.updatedAt && pushed[w.id] !== w.updatedAt) schedulePush(db, uid, w.id, w, ['users', uid, 'weeks', w.id]);
+          for (const w of Object.values(store.getState().weeks)) if (!seen.has(w.id) && w.updatedAt && pushed[w.id] !== w.updatedAt) schedulePush(db, w.id, w, ['users', uid, 'weeks', w.id]);
           s.setSync({ status: 'online', lastSync: Date.now() });
         },
         (e) => store.getState().setSync({ status: 'error', error: e.message })
@@ -89,30 +135,32 @@ export function startSync(): () => void {
     );
 
     // local -> remote
-    unsubs.push(
+    current.unsubs.push(
       store.subscribe((s, prev) => {
-        if (s.profile !== prev.profile && s.profile.updatedAt && pushed.profile !== s.profile.updatedAt) schedulePush(db, uid, 'profile', s.profile, ['users', uid, 'state', 'profile']);
+        if (s.profile !== prev.profile && s.profile.updatedAt && pushed.profile !== s.profile.updatedAt) schedulePush(db, 'profile', s.profile, profilePath);
         if (s.weeks !== prev.weeks) {
           for (const w of Object.values(s.weeks)) {
-            if (w !== prev.weeks[w.id] && w.updatedAt && pushed[w.id] !== w.updatedAt) schedulePush(db, uid, w.id, w, ['users', uid, 'weeks', w.id]);
+            if (w !== prev.weeks[w.id] && w.updatedAt && pushed[w.id] !== w.updatedAt) schedulePush(db, w.id, w, ['users', uid, 'weeks', w.id]);
           }
         }
       })
     );
   };
 
-  signInAnonymously(fb.auth).catch((e) => store.getState().setSync({ status: 'error', error: e.message }));
-  unsubs.push(
-    onAuthStateChanged(fb.auth, (user) => {
-      if (user) {
-        store.getState().setSync({ uid: user.uid, status: 'connecting' });
-        attach(user.uid);
-      }
-    })
-  );
+  const unsubAuth = onAuthStateChanged(fb.auth, (user) => {
+    if (!user) {
+      detach();
+      store.getState().setSync({ status: 'connecting', uid: undefined, user: undefined });
+      signInAnonymously(fb.auth).catch((e) => store.getState().setSync({ status: 'error', error: e.message }));
+      return;
+    }
+    store.getState().setSync({ uid: user.uid, user: accountInfo(user), status: current?.uid === user.uid ? store.getState().sync.status : 'connecting' });
+    if (current?.uid !== user.uid) attach(user.uid);
+  });
+  if (!fb.auth.currentUser) signInAnonymously(fb.auth).catch((e) => store.getState().setSync({ status: 'error', error: e.message }));
 
   return () => {
-    unsubs.forEach((u) => u());
-    Object.values(pending).forEach(clearTimeout);
+    unsubAuth();
+    detach();
   };
 }

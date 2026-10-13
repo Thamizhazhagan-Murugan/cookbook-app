@@ -4,3 +4,6 @@ dist/
 web-build/
 *.log
 .DS_Store
+# Firebase native config (contains project keys) — keep local or as EAS secret files
+google-services.json
+GoogleService-Info.plist

@@ -6,8 +6,8 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RecipeRow } from '@/components/RecipeCard';
+import { AccountCard } from '@/components/AccountCard';
 import { Card, Chip, Press, T } from '@/components/ui';
-import { isFirebaseConfigured } from '@/firebaseConfig';
 import { RECIPE_BY_ID } from '@/lib/recipes';
 import { SLOT_KEYS, type SlotKey } from '@/lib/types';
 import { SLOT_LABELS, countMeals } from '@/lib/week';
@@ -45,19 +45,10 @@ export default function MoreScreen() {
   const cooking = useStore((s) => s.profile.cooking);
   const weeks = useStore((s) => s.weeks);
   const slots = useStore((s) => s.profile.settings.slots);
-  const sync = useStore((s) => s.sync);
   const setSlots = useStore((s) => s.setSlots);
   const pastWeeks = Object.values(weeks).filter((w) => countMeals(w) > 0).length;
   const inProgress = Object.values(cooking).sort((a, b) => b.updatedAt - a.updatedAt);
   const recent = cookLog.slice(0, 5);
-
-  const syncLine = !isFirebaseConfigured()
-    ? 'Local only — add your Firebase config to sync across devices'
-    : sync.status === 'online'
-      ? `Synced${sync.lastSync ? ` · ${new Date(sync.lastSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}`
-      : sync.status === 'error'
-        ? `Sync error: ${sync.error}`
-        : 'Connecting…';
 
   return (
     <ScrollView style={{ backgroundColor: c.canvas }} contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 120, gap: 16 }}>
@@ -113,27 +104,7 @@ export default function MoreScreen() {
         </View>
       </View>
 
-      <Card>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Ionicons name={sync.mode === 'cloud' ? (sync.status === 'online' ? 'cloud-done-outline' : sync.status === 'error' ? 'cloud-offline-outline' : 'cloud-outline') : 'phone-portrait-outline'} size={22} color={sync.status === 'error' ? c.chili : c.basil} />
-          <View style={{ flex: 1 }}>
-            <T v="bodySemi">{sync.mode === 'cloud' ? 'Cloud backup (Firebase)' : 'Saved on this phone'}</T>
-            <T v="small" color="muted">
-              {syncLine}
-            </T>
-            {sync.uid ? (
-              <T v="tiny" color="muted" style={{ marginTop: 2 }}>
-                id {sync.uid.slice(0, 8)}…
-              </T>
-            ) : null}
-          </View>
-        </View>
-        {!isFirebaseConfigured() ? (
-          <T v="tiny" color="muted" style={{ marginTop: 8 }}>
-            Open src/firebaseConfig.ts in the project and paste your Firebase web config — the README walks through it. Weeks, pantry, favourites and cooking progress then back up automatically and follow you to a new phone.
-          </T>
-        ) : null}
-      </Card>
+      <AccountCard />
 
       <T v="tiny" color="muted">
         Recipes from The Meal Prep Cookbook and Jalal&apos;s Cookbook by Jalal Sameja, for personal use. Cooking times are estimated from the steps.
