@@ -20,13 +20,13 @@ export const RecipeTile = memo(function RecipeTile({ recipe, onPress }: { recipe
     <Press haptic="none" onPress={onPress ?? (() => router.push(`/recipe/${recipe.id}`))} style={[styles.tile, { backgroundColor: c.surface, shadowColor: c.shadow, shadowOpacity: dark ? 0 : 0.1 }]}>
       <View style={styles.photoWrap}>
         <Image source={PHOTOS[recipe.id]} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
-        <View style={[styles.time, { backgroundColor: c.yolk }]}>
-          <T v="tiny" color="yolkInk" style={{ fontFamily: fonts.bodyBold }}>
+        <View style={[styles.time, { backgroundColor: c.highlight }]}>
+          <T v="tiny" color="highlightInk" style={{ fontFamily: fonts.bodyBold }}>
             {timeLabel(recipe)}
           </T>
         </View>
         <Press haptic="select" onPress={() => toggleFavorite(recipe.id)} style={styles.heart} accessibilityLabel={fav ? 'Remove from favourites' : 'Add to favourites'}>
-          <Ionicons name={fav ? 'heart' : 'heart-outline'} size={17} color={fav ? '#C2362B' : '#555'} />
+          <Ionicons name={fav ? 'heart' : 'heart-outline'} size={17} color={fav ? c.danger : '#555'} />
         </Press>
       </View>
       <View style={{ padding: 10, gap: 4, flex: 1 }}>

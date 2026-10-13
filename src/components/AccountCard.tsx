@@ -65,8 +65,8 @@ export function AccountCard() {
         {google && user?.photo ? (
           <Image source={{ uri: user.photo }} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.surface2 }} />
         ) : (
-          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.basilSoft, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name={sync.mode === 'cloud' ? (google ? 'person' : 'phone-portrait-outline') : 'phone-portrait-outline'} size={22} color={c.basil} />
+          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name={sync.mode === 'cloud' ? (google ? 'person' : 'phone-portrait-outline') : 'phone-portrait-outline'} size={22} color={c.accent} />
           </View>
         )}
         <View style={{ flex: 1, minWidth: 0 }}>
@@ -78,7 +78,7 @@ export function AccountCard() {
             {statusLine}
           </T>
         </View>
-        <Ionicons name={sync.mode === 'cloud' ? (sync.status === 'online' ? 'cloud-done-outline' : sync.status === 'error' ? 'cloud-offline-outline' : 'cloud-outline') : 'cloud-offline-outline'} size={22} color={sync.status === 'error' ? c.chili : c.muted} />
+        <Ionicons name={sync.mode === 'cloud' ? (sync.status === 'online' ? 'cloud-done-outline' : sync.status === 'error' ? 'cloud-offline-outline' : 'cloud-outline') : 'cloud-offline-outline'} size={22} color={sync.status === 'error' ? c.danger : c.muted} />
       </View>
 
       {sync.mode === 'local' ? (
@@ -100,11 +100,11 @@ export function AccountCard() {
           {avail === 'ready' ? (
             <Button label={busy ? 'Signing in…' : 'Continue with Google'} icon="logo-google" kind="primary" onPress={onGoogle} disabled={busy} style={{ alignSelf: 'flex-start' }} />
           ) : avail === 'expo-go' ? (
-            <T v="tiny" color="basil">
+            <T v="tiny" color="accent">
               Google sign-in works in the installed app (EAS build) — Expo Go can&apos;t load Google&apos;s native sign-in.
             </T>
           ) : (
-            <T v="tiny" color="basil">
+            <T v="tiny" color="accent">
               To enable Google sign-in, paste the Web client ID into src/firebaseConfig.ts and enable Google in Firebase → Authentication.
             </T>
           )}

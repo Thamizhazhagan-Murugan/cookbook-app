@@ -20,8 +20,8 @@ function RowLink({ icon, title, sub, onPress, last }: { icon: IconName; title: s
   const { c } = useTheme();
   return (
     <Press haptic="select" onPress={onPress} style={[styles.row, { borderBottomColor: c.line, borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth }]}>
-      <View style={[styles.icon, { backgroundColor: c.basilSoft }]}>
-        <Ionicons name={icon} size={20} color={c.basil} />
+      <View style={[styles.icon, { backgroundColor: c.accentSoft }]}>
+        <Ionicons name={icon} size={20} color={c.accent} />
       </View>
       <View style={{ flex: 1 }}>
         <T v="bodySemi">{title}</T>
@@ -71,7 +71,7 @@ export default function MoreScreen() {
             {inProgress.map((p) => {
               const r = RECIPE_BY_ID[p.recipeId];
               if (!r) return null;
-              return <RecipeRow key={p.recipeId} recipe={r} onPress={() => router.push(`/cook/${r.id}`)} sub={<T v="tiny" color="basil">Resume at step {Math.min(p.step + 1, r.steps.length)} of {r.steps.length}</T>} right={<Ionicons name="play-circle" size={28} color={c.yolk} />} />;
+              return <RecipeRow key={p.recipeId} recipe={r} onPress={() => router.push(`/cook/${r.id}`)} sub={<T v="tiny" color="accent">Resume at step {Math.min(p.step + 1, r.steps.length)} of {r.steps.length}</T>} right={<Ionicons name="play-circle" size={28} color={c.highlight} />} />;
             })}
           </View>
         </View>
@@ -99,7 +99,7 @@ export default function MoreScreen() {
         <T v="small" color="muted" style={{ marginBottom: 8 }}>
           When on, picking a recipe fills the following days with it — one serving per day, as many days as the batch makes.
         </T>
-        <Chip label={mealPrep ? 'Meal-prep mode on' : 'Meal-prep mode off'} icon={mealPrep ? 'checkmark' : 'layers-outline'} on={mealPrep} tone="basil" onPress={() => setMealPrep(!mealPrep)} />
+        <Chip label={mealPrep ? 'Meal-prep mode on' : 'Meal-prep mode off'} icon={mealPrep ? 'checkmark' : 'layers-outline'} on={mealPrep} tone="accent" onPress={() => setMealPrep(!mealPrep)} />
       </View>
 
       <View>
@@ -111,7 +111,7 @@ export default function MoreScreen() {
         </T>
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
           {SLOT_KEYS.map((s: SlotKey) => (
-            <Chip key={s} label={SLOT_LABELS[s]} on={slots.includes(s)} tone="basil" onPress={() => setSlots(slots.includes(s) ? (slots.length > 1 ? slots.filter((x) => x !== s) : slots) : SLOT_KEYS.filter((x) => slots.includes(x) || x === s))} />
+            <Chip key={s} label={SLOT_LABELS[s]} on={slots.includes(s)} tone="accent" onPress={() => setSlots(slots.includes(s) ? (slots.length > 1 ? slots.filter((x) => x !== s) : slots) : SLOT_KEYS.filter((x) => slots.includes(x) || x === s))} />
           ))}
         </View>
       </View>

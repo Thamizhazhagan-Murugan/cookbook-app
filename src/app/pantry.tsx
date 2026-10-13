@@ -89,7 +89,7 @@ export default function PantryScreen() {
                         {i.name}
                       </T>
                       <T v="tiny" color="muted">
-                        <T v="tiny" color="basil" style={{ fontFamily: fonts.bodySemi }}>
+                        <T v="tiny" color="accent" style={{ fontFamily: fonts.bodySemi }}>
                           {fmtStock(qty, pack, i.name)}
                         </T>
                         {' · '}
@@ -124,7 +124,7 @@ export default function PantryScreen() {
                   {s.items.map((name) => {
                     const key = ingKey(name.split('/')[0]);
                     const on = !!pantry[key];
-                    return <Chip key={name} label={name} on={on} tone="basil" icon={on ? 'checkmark' : undefined} onPress={() => (on ? pantryRemove(key) : add(name.split('/')[0].trim()))} />;
+                    return <Chip key={name} label={name} on={on} tone="accent" icon={on ? 'checkmark' : undefined} onPress={() => (on ? pantryRemove(key) : add(name.split('/')[0].trim()))} />;
                   })}
                 </View>
               </View>

@@ -110,7 +110,7 @@ export default function RecipeScreen() {
 
           {/* facts */}
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <View style={[styles.fact, { backgroundColor: c.yolkSoft, flex: 1.4 }]}>
+            <View style={[styles.fact, { backgroundColor: c.highlightSoft, flex: 1.4 }]}>
               <T v="num">{minsText(t.total_min)}</T>
               <T v="tiny" style={{ opacity: 0.75 }}>
                 {t.prep_min} prep · {t.cook_min} cook{t.passive_min ? ` · +${minsText(t.passive_min)} rest` : ''}
@@ -142,7 +142,7 @@ export default function RecipeScreen() {
             {r.steps.length ? (
               progress ? (
                 <>
-                  <Button label={`Resume · step ${Math.min(progress.step + 1, r.steps.length)} of ${r.steps.length}`} icon="play" kind="yolk" onPress={() => router.push(`/cook/${r.id}`)} />
+                  <Button label={`Resume · step ${Math.min(progress.step + 1, r.steps.length)} of ${r.steps.length}`} icon="play" kind="highlight" onPress={() => router.push(`/cook/${r.id}`)} />
                   <Button
                     label="Clear"
                     icon="refresh"
@@ -155,7 +155,7 @@ export default function RecipeScreen() {
                   />
                 </>
               ) : (
-                <Button label="Start cooking" icon="flame" kind="yolk" onPress={() => router.push(`/cook/${r.id}`)} />
+                <Button label="Start cooking" icon="flame" kind="highlight" onPress={() => router.push(`/cook/${r.id}`)} />
               )
             ) : null}
           </View>
@@ -169,7 +169,7 @@ export default function RecipeScreen() {
               {base ? <Stepper compact value={servings} onChange={setServings} format={(n) => `${n} serving${n === 1 ? '' : 's'}`} /> : null}
             </View>
             {f !== 1 ? (
-              <T v="tiny" color="basil" style={{ marginBottom: 6 }}>
+              <T v="tiny" color="accent" style={{ marginBottom: 6 }}>
                 Scaled to {servings} servings — the book makes {base}.
               </T>
             ) : r.servings_text ? (
@@ -216,7 +216,7 @@ export default function RecipeScreen() {
             {r.steps.length ? (
               r.steps.map((s, i) => (
                 <View key={s.n} style={[styles.step, { borderTopColor: c.line, borderTopWidth: i ? StyleSheet.hairlineWidth : 0, opacity: progress && i < progress.step ? 0.55 : 1 }]}>
-                  <T v="num" color="basil" style={{ width: 34 }}>
+                  <T v="num" color="accent" style={{ width: 34 }}>
                     {s.n}
                   </T>
                   <View style={{ flex: 1 }}>
@@ -281,7 +281,7 @@ export default function RecipeScreen() {
           </View>
           <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
             {SLOT_KEYS.map((s) => (
-              <Chip key={s} label={SLOT_LABELS[s]} on={pSlot === s} onPress={() => setPSlot(s)} tone="basil" />
+              <Chip key={s} label={SLOT_LABELS[s]} on={pSlot === s} onPress={() => setPSlot(s)} tone="accent" />
             ))}
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -296,7 +296,7 @@ export default function RecipeScreen() {
             </View>
             <Stepper compact value={Math.max(1, Math.min(servings, 40))} onChange={setServings} />
           </View>
-          {base > 1 ? <Chip label="Meal prep — spread across days" icon={spread ? 'checkmark' : 'layers-outline'} on={spread} tone="basil" onPress={() => setSpread((v) => !v)} /> : null}
+          {base > 1 ? <Chip label="Meal prep — spread across days" icon={spread ? 'checkmark' : 'layers-outline'} on={spread} tone="accent" onPress={() => setSpread((v) => !v)} /> : null}
           <Button
             label={spread ? `Add to ${dayRangeLabel(spreadDays)} ${SLOT_LABELS[pSlot].toLowerCase()}` : `Add to ${DAY_LABELS[pDay]} ${SLOT_LABELS[pSlot].toLowerCase()}`}
             kind="primary"

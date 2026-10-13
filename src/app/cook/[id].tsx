@@ -78,12 +78,12 @@ export default function CookScreen() {
         <IconButton icon="close" onPress={() => router.back()} accessibilityLabel="Leave cook mode (progress is saved)" />
       </View>
       <View style={{ height: 4, backgroundColor: c.line }}>
-        <View style={{ height: 4, width: `${((idx + 1) / n) * 100}%`, backgroundColor: c.basil }} />
+        <View style={{ height: 4, width: `${((idx + 1) / n) * 100}%`, backgroundColor: c.accent }} />
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 22, paddingBottom: 160, gap: 10 }}>
         <Animated.View key={idx} entering={FadeIn.duration(160)} exiting={FadeOut.duration(100)}>
-          <T v="smallSemi" color="basil">
+          <T v="smallSemi" color="accent">
             Step {s.n} of {n}
           </T>
           {s.title ? (

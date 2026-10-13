@@ -133,7 +133,7 @@ export default function GroceriesScreen() {
         </View>
 
         {bought.length ? (
-          <Card style={{ marginBottom: 14, backgroundColor: c.basilSoft, borderColor: 'transparent' }}>
+          <Card style={{ marginBottom: 14, backgroundColor: c.accentSoft, borderColor: 'transparent' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <View style={{ flex: 1 }}>
                 <T v="bodySemi">
@@ -204,12 +204,12 @@ export default function GroceriesScreen() {
               <Card pad={false} style={{ paddingHorizontal: 12 }}>
                 {have.map((i) => (
                   <Press key={i.key} haptic="none" onPress={() => setItem(i)} style={[styles.haveRow, { borderBottomColor: c.line }]}>
-                    <Ionicons name="checkmark-circle" size={20} color={c.basil} />
+                    <Ionicons name="checkmark-circle" size={20} color={c.accent} />
                     <T v="body" color="muted" style={{ flex: 1, fontSize: 15 }}>
                       {i.name}
                       {i.qtyStr ? ` · needs ${i.qtyStr}` : ''}
                     </T>
-                    <T v="tiny" color="basil">
+                    <T v="tiny" color="accent">
                       {i.haveText || 'have'}
                     </T>
                   </Press>
@@ -255,7 +255,7 @@ export default function GroceriesScreen() {
                 </T>
                 {item.sources.map((s) => (
                   <Press key={s.recipeId} haptic="none" onPress={() => { setItem(null); router.push(`/recipe/${s.recipeId}`); }}>
-                    <T v="body" color="basil">
+                    <T v="body" color="accent">
                       {s.title}
                     </T>
                   </Press>
@@ -267,10 +267,10 @@ export default function GroceriesScreen() {
                 item.have ? (
                   <Chip label="I need to buy this" icon="cart-outline" onPress={() => { setHave(weekId, item.key, false); if (item.inPantry) pantryRemove(item.key); setItem(null); }} />
                 ) : (
-                  <Chip label="I already have this" icon="checkmark" tone="basil" on onPress={() => { setHave(weekId, item.key, true); setItem(null); }} />
+                  <Chip label="I already have this" icon="checkmark" tone="accent" on onPress={() => { setHave(weekId, item.key, true); setItem(null); }} />
                 )
               ) : (
-                <Chip label="Remove" icon="trash-outline" tone="chili" on onPress={() => { removeExtra(weekId, item.custom!.id); setItem(null); }} />
+                <Chip label="Remove" icon="trash-outline" tone="danger" on onPress={() => { removeExtra(weekId, item.custom!.id); setItem(null); }} />
               )}
             </View>
           </View>

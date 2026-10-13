@@ -66,7 +66,7 @@ export default function PickScreen() {
 
   const batchDays = batch ? mealPrepDays(week, day, slot, batch.servings) : [];
 
-  const toneColor = (tone: ReturnType<typeof explain>['tone']) => (tone === 'great' ? c.basil : tone === 'good' ? c.basil : tone === 'ok' ? c.muted : c.muted);
+  const toneColor = (tone: ReturnType<typeof explain>['tone']) => (tone === 'great' ? c.accent : tone === 'good' ? c.accent : tone === 'ok' ? c.muted : c.muted);
 
   return (
     <View style={{ flex: 1, backgroundColor: c.canvas, paddingTop: insets.top + 8 }}>
@@ -131,12 +131,12 @@ export default function PickScreen() {
                     </T>
                   </View>
                 ) : already ? (
-                  <T v="tiny" color="basil" style={{ marginTop: 2 }}>
+                  <T v="tiny" color="accent" style={{ marginTop: 2 }}>
                     Already in this week
                   </T>
                 ) : undefined
               }
-              right={<Ionicons name="add-circle" size={28} color={c.basil} />}
+              right={<Ionicons name="add-circle" size={28} color={c.accent} />}
             />
           );
         }}
@@ -165,7 +165,7 @@ export default function PickScreen() {
             </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
               {batchDays.map((d) => (
-                <Chip key={d} label={`${DAY_LONG[d]} ${SLOT_LABELS[slot].toLowerCase()}`} on tone="basil" />
+                <Chip key={d} label={`${DAY_LONG[d]} ${SLOT_LABELS[slot].toLowerCase()}`} on tone="accent" />
               ))}
             </View>
             {batchDays.length < batch.servings ? (

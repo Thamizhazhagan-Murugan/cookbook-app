@@ -27,7 +27,7 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: c.basil,
+          tabBarActiveTintColor: c.accent,
           tabBarInactiveTintColor: c.muted,
           tabBarStyle: { backgroundColor: c.surface, borderTopColor: c.line, height: barHeight, paddingTop: 6 },
           tabBarLabelStyle: { fontFamily: fonts.bodySemi, fontSize: 11.5 },
@@ -35,7 +35,7 @@ export default function TabLayout() {
         }}>
         <Tabs.Screen name="index" options={{ title: 'Plan', tabBarIcon: icon('calendar', 'calendar-outline') }} />
         <Tabs.Screen name="recipes" options={{ title: 'Recipes', tabBarIcon: icon('book', 'book-outline') }} />
-        <Tabs.Screen name="groceries" options={{ title: 'Groceries', tabBarIcon: icon('cart', 'cart-outline'), tabBarBadge: toBuy || undefined, tabBarBadgeStyle: { backgroundColor: c.basil, color: c.basilInk, fontFamily: fonts.bodyBold, fontSize: 11 } }} />
+        <Tabs.Screen name="groceries" options={{ title: 'Groceries', tabBarIcon: icon('cart', 'cart-outline'), tabBarBadge: toBuy || undefined, tabBarBadgeStyle: { backgroundColor: c.accent, color: c.accentInk, fontFamily: fonts.bodyBold, fontSize: 11 } }} />
         <Tabs.Screen name="more" options={{ title: 'Pantry & more', tabBarIcon: icon('file-tray-full', 'file-tray-full-outline') }} />
       </Tabs>
       <TimerDock bottom={barHeight} />

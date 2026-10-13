@@ -29,7 +29,7 @@ export function Toast({ bottom = 24 }: { bottom?: number }) {
               hide();
               router.push(toast.action!.href as never);
             }}>
-            <T v="smallSemi" style={{ color: c.yolk, fontFamily: fonts.bodyBold }}>
+            <T v="smallSemi" style={{ color: c.highlight, fontFamily: fonts.bodyBold }}>
               {toast.action.label}
             </T>
           </Press>

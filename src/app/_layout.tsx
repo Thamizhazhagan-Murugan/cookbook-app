@@ -22,8 +22,8 @@ function Shell() {
   useTimerTicker();
   useEffect(() => startSync(), []);
   const navTheme = dark
-    ? { ...DarkTheme, colors: { ...DarkTheme.colors, background: c.canvas, card: c.surface, text: c.ink, border: c.line, primary: c.basil } }
-    : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: c.canvas, card: c.surface, text: c.ink, border: c.line, primary: c.basil } };
+    ? { ...DarkTheme, colors: { ...DarkTheme.colors, background: c.canvas, card: c.surface, text: c.ink, border: c.line, primary: c.accent } }
+    : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: c.canvas, card: c.surface, text: c.ink, border: c.line, primary: c.accent } };
   return (
     <ThemeProvider value={navTheme}>
       <View style={{ flex: 1, backgroundColor: c.canvas }}>

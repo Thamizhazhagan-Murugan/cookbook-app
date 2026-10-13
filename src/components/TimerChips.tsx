@@ -14,7 +14,7 @@ export function TimerChips({ text, onStart, big }: { text: string; onStart: (sec
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
       {hints.map((h, i) => (
-        <Press key={i} haptic="select" onPress={() => onStart(h.secs, h.label)} style={[styles.chip, { backgroundColor: c.yolkSoft, borderColor: c.yolk, height: big ? 40 : 32, paddingHorizontal: big ? 14 : 10 }]} accessibilityLabel={`Start a ${h.label} timer`}>
+        <Press key={i} haptic="select" onPress={() => onStart(h.secs, h.label)} style={[styles.chip, { backgroundColor: c.highlightSoft, borderColor: c.highlight, height: big ? 40 : 32, paddingHorizontal: big ? 14 : 10 }]} accessibilityLabel={`Start a ${h.label} timer`}>
           <Ionicons name="timer-outline" size={big ? 18 : 15} color={c.ink} />
           <T v="tiny" style={{ fontFamily: fonts.bodyBold, fontSize: big ? 15 : 13 }}>
             {h.label}

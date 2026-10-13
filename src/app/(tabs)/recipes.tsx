@@ -45,7 +45,7 @@ export default function RecipesScreen() {
               {CATEGORIES.map((x) => (
                 <Chip key={x} label={x} on={cat === x} onPress={() => setCat(x)} />
               ))}
-              <Chip label="Favourites" icon={fav ? 'heart' : 'heart-outline'} on={fav} tone="chili" onPress={() => setFav((v) => !v)} />
+              <Chip label="Favourites" icon={fav ? 'heart' : 'heart-outline'} on={fav} tone="danger" onPress={() => setFav((v) => !v)} />
             </ScrollView>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <Chip label={`Sort: ${SORTS.find((s) => s.key === sort)?.label}`} icon="swap-vertical" onPress={() => setSheet(true)} />

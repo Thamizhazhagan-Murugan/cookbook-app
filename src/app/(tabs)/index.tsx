@@ -80,7 +80,7 @@ export default function PlanScreen() {
                 {stats.toBuy} to buy{stats.have ? `, ${stats.have} already in pantry` : ''}
               </T>
             </View>
-            <Ionicons name="cart-outline" size={22} color={c.basil} />
+            <Ionicons name="cart-outline" size={22} color={c.accent} />
           </Press>
         ) : (
           <Card style={{ marginBottom: 14 }}>
@@ -112,15 +112,15 @@ export default function PlanScreen() {
           const plan = week?.days[day] || {};
           const shown = [...slots, ...(Object.keys(plan) as SlotKey[]).filter((s) => !slots.includes(s))];
           return (
-            <Animated.View key={day} layout={LinearTransition} style={[styles.day, { backgroundColor: c.surface, borderColor: isToday ? c.yolk : c.line, borderWidth: isToday ? 2 : StyleSheet.hairlineWidth }]}>
+            <Animated.View key={day} layout={LinearTransition} style={[styles.day, { backgroundColor: c.surface, borderColor: isToday ? c.highlight : c.line, borderWidth: isToday ? 2 : StyleSheet.hairlineWidth }]}>
               <View style={styles.dayHead}>
                 <T v="h2">{DAY_LONG[day]}</T>
                 <T v="small" color="muted">
                   {d.getDate()}
                 </T>
                 {isToday ? (
-                  <View style={[styles.todayPill, { backgroundColor: c.yolk }]}>
-                    <T v="tiny" color="yolkInk" style={{ fontFamily: fonts.bodyBold }}>
+                  <View style={[styles.todayPill, { backgroundColor: c.highlight }]}>
+                    <T v="tiny" color="highlightInk" style={{ fontFamily: fonts.bodyBold }}>
                       Today
                     </T>
                   </View>
@@ -155,8 +155,8 @@ export default function PlanScreen() {
                     .filter((slot) => !plan[slot])
                     .map((slot) => (
                       <Press key={slot} haptic="select" onPress={() => router.push({ pathname: '/pick', params: { week: weekId, day, slot } })} style={[styles.emptySlot, { borderColor: c.line }]}>
-                        <Ionicons name="add" size={16} color={c.basil} />
-                        <T v="smallSemi" color="basil">
+                        <Ionicons name="add" size={16} color={c.accent} />
+                        <T v="smallSemi" color="accent">
                           {SLOT_LABELS[slot]}
                         </T>
                       </Press>

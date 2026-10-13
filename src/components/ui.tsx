@@ -24,7 +24,7 @@ const variants: Record<TVariant, TextStyle> = {
   num: { fontFamily: fonts.display, fontSize: 22, lineHeight: 24 },
 };
 
-export function T({ v = 'body', color, style, children, ...rest }: { v?: TVariant; color?: 'ink' | 'muted' | 'basil' | 'chili' | 'yolkInk' | 'basilInk' | string; style?: StyleProp<TextStyle>; children?: React.ReactNode } & React.ComponentProps<typeof Text>) {
+export function T({ v = 'body', color, style, children, ...rest }: { v?: TVariant; color?: 'ink' | 'muted' | 'accent' | 'danger' | 'highlightInk' | 'accentInk' | string; style?: StyleProp<TextStyle>; children?: React.ReactNode } & React.ComponentProps<typeof Text>) {
   const { c } = useTheme();
   const col = color ? ((c as Record<string, string>)[color] ?? color) : c.ink;
   return (
@@ -51,10 +51,10 @@ export function Press({ onPress, haptic = 'tap', style, children, ...rest }: Pre
 }
 
 /* ---------- Button ---------- */
-export function Button({ label, icon, kind = 'secondary', size = 'md', onPress, disabled, style, haptic }: { label: string; icon?: IconName; kind?: 'primary' | 'secondary' | 'yolk' | 'ghost' | 'danger' | 'soft'; size?: 'sm' | 'md' | 'lg'; onPress?: () => void; disabled?: boolean; style?: StyleProp<ViewStyle>; haptic?: 'tap' | 'select' | 'none' }) {
+export function Button({ label, icon, kind = 'secondary', size = 'md', onPress, disabled, style, haptic }: { label: string; icon?: IconName; kind?: 'primary' | 'secondary' | 'highlight' | 'ghost' | 'danger' | 'soft'; size?: 'sm' | 'md' | 'lg'; onPress?: () => void; disabled?: boolean; style?: StyleProp<ViewStyle>; haptic?: 'tap' | 'select' | 'none' }) {
   const { c } = useTheme();
-  const bg = { primary: c.basil, secondary: c.surface, yolk: c.yolk, ghost: 'transparent', danger: c.chiliSoft, soft: c.basilSoft }[kind];
-  const fg = { primary: c.basilInk, secondary: c.ink, yolk: c.yolkInk, ghost: c.muted, danger: c.chili, soft: c.basil }[kind];
+  const bg = { primary: c.accent, secondary: c.surface, highlight: c.highlight, ghost: 'transparent', danger: c.dangerSoft, soft: c.accentSoft }[kind];
+  const fg = { primary: c.accentInk, secondary: c.ink, highlight: c.highlightInk, ghost: c.muted, danger: c.danger, soft: c.accent }[kind];
   const border = kind === 'secondary' ? c.line : 'transparent';
   const h = { sm: 36, md: 46, lg: 54 }[size];
   const fs = { sm: 14, md: 15, lg: 17 }[size];
@@ -76,10 +76,10 @@ export function IconButton({ icon, onPress, size = 40, color, bg, style, accessi
 }
 
 /* ---------- Chip ---------- */
-export function Chip({ label, on, onPress, icon, tone = 'ink' }: { label: string; on?: boolean; onPress?: () => void; icon?: IconName; tone?: 'ink' | 'chili' | 'basil' }) {
+export function Chip({ label, on, onPress, icon, tone = 'ink' }: { label: string; on?: boolean; onPress?: () => void; icon?: IconName; tone?: 'ink' | 'danger' | 'accent' }) {
   const { c } = useTheme();
-  const onBg = tone === 'chili' ? c.chili : tone === 'basil' ? c.basil : c.ink;
-  const onFg = tone === 'basil' ? c.basilInk : c.canvas;
+  const onBg = tone === 'danger' ? c.danger : tone === 'accent' ? c.accent : c.ink;
+  const onFg = tone === 'accent' ? c.accentInk : c.canvas;
   return (
     <Press haptic="select" onPress={onPress} style={[styles.chip, { backgroundColor: on ? onBg : c.surface, borderColor: on ? onBg : c.line }]}>
       {icon ? <Ionicons name={icon} size={14} color={on ? onFg : c.muted} /> : null}
@@ -110,7 +110,7 @@ export function CheckRow({ checked, onToggle, children, round, style }: { checke
   const { c } = useTheme();
   return (
     <Press haptic="select" onPress={onToggle} style={[styles.checkRow, { borderBottomColor: c.line }, style]} accessibilityRole="checkbox" accessibilityState={{ checked }}>
-      <View style={[styles.box, { borderRadius: round ? 11 : 6, borderColor: checked ? c.basil : c.line, backgroundColor: checked ? c.basil : c.surface }]}>{checked ? <Ionicons name="checkmark" size={15} color={c.basilInk} /> : null}</View>
+      <View style={[styles.box, { borderRadius: round ? 11 : 6, borderColor: checked ? c.accent : c.line, backgroundColor: checked ? c.accent : c.surface }]}>{checked ? <Ionicons name="checkmark" size={15} color={c.accentInk} /> : null}</View>
       <View style={{ flex: 1 }}>{children}</View>
     </Press>
   );
@@ -122,10 +122,10 @@ export function Card({ children, style, pad = true }: { children: React.ReactNod
   return <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.line, shadowColor: c.shadow, shadowOpacity: dark ? 0 : 0.08, padding: pad ? space.lg : 0 }, style]}>{children}</View>;
 }
 
-export function Badge({ label, tone = 'yolk', icon }: { label: string; tone?: 'yolk' | 'basil' | 'chili' | 'muted' | 'soft'; icon?: IconName }) {
+export function Badge({ label, tone = 'highlight', icon }: { label: string; tone?: 'highlight' | 'accent' | 'danger' | 'muted' | 'soft'; icon?: IconName }) {
   const { c } = useTheme();
-  const bg = { yolk: c.yolk, basil: c.basil, chili: c.chili, muted: c.surface2, soft: c.basilSoft }[tone];
-  const fg = { yolk: c.yolkInk, basil: c.basilInk, chili: '#fff', muted: c.muted, soft: c.basil }[tone];
+  const bg = { highlight: c.highlight, accent: c.accent, danger: c.danger, muted: c.surface2, soft: c.accentSoft }[tone];
+  const fg = { highlight: c.highlightInk, accent: c.accentInk, danger: '#fff', muted: c.muted, soft: c.accent }[tone];
   return (
     <View style={[styles.badge, { backgroundColor: bg }]}>
       {icon ? <Ionicons name={icon} size={12} color={fg} /> : null}

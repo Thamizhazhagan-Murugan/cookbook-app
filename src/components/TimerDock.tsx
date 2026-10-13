@@ -44,26 +44,26 @@ export function TimerDock({ bottom = 0 }: { bottom?: number }) {
         {timers.map((t) => {
           const rem = t.done ? 0 : t.running ? Math.max(0, Math.round((t.endAt - Date.now()) / 1000)) : t.remaining;
           return (
-            <View key={t.id} style={[styles.pill, { backgroundColor: t.done ? c.chili : c.yolk, shadowColor: c.shadow }]}>
+            <View key={t.id} style={[styles.pill, { backgroundColor: t.done ? c.danger : c.highlight, shadowColor: c.shadow }]}>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <T v="tiny" numberOfLines={1} style={{ color: t.done ? '#fff' : c.yolkInk, fontFamily: fonts.bodySemi }}>
+                <T v="tiny" numberOfLines={1} style={{ color: t.done ? '#fff' : c.highlightInk, fontFamily: fonts.bodySemi }}>
                   {t.done ? 'Done!' : t.label}
                 </T>
-                <T v="tiny" numberOfLines={1} style={{ color: t.done ? 'rgba(255,255,255,0.8)' : c.yolkInk, opacity: 0.7 }}>
+                <T v="tiny" numberOfLines={1} style={{ color: t.done ? 'rgba(255,255,255,0.8)' : c.highlightInk, opacity: 0.7 }}>
                   {t.sub}
                 </T>
               </View>
-              <T style={{ fontFamily: fonts.display, fontSize: 22, color: t.done ? '#fff' : c.yolkInk, opacity: !t.running && !t.done ? 0.55 : 1, minWidth: 60, textAlign: 'right' }}>{clockText(rem)}</T>
+              <T style={{ fontFamily: fonts.display, fontSize: 22, color: t.done ? '#fff' : c.highlightInk, opacity: !t.running && !t.done ? 0.55 : 1, minWidth: 60, textAlign: 'right' }}>{clockText(rem)}</T>
               {!t.done ? (
                 <Press onPress={() => toggle(t.id)} style={styles.rb} accessibilityLabel={t.running ? 'Pause' : 'Resume'}>
-                  <Ionicons name={t.running ? 'pause' : 'play'} size={16} color={c.yolkInk} />
+                  <Ionicons name={t.running ? 'pause' : 'play'} size={16} color={c.highlightInk} />
                 </Press>
               ) : null}
               <Press onPress={() => plus(t.id)} style={styles.rb} accessibilityLabel="Add one minute">
-                <Ionicons name="add" size={18} color={t.done ? '#fff' : c.yolkInk} />
+                <Ionicons name="add" size={18} color={t.done ? '#fff' : c.highlightInk} />
               </Press>
               <Press onPress={() => remove(t.id)} style={styles.rb} accessibilityLabel="Dismiss timer">
-                <Ionicons name="close" size={18} color={t.done ? '#fff' : c.yolkInk} />
+                <Ionicons name="close" size={18} color={t.done ? '#fff' : c.highlightInk} />
               </Press>
             </View>
           );

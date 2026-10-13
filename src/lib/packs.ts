@@ -51,12 +51,12 @@ const RULES: Rule[] = [
   [/seasoning|spice mix|taco spice|rub\b/, jar(50)],
   [/baking powder|baking soda|bicarb/, { label: 'tub', unit: 'g', size: 225, tspG: 4.5 }],
   [/vanilla/, { label: 'bottle', unit: 'ml', size: 118 }],
-  [/cinnamon|nutmeg|cumin|paprika|turmeric|oregano|thyme|rosemary|dried (basil|parsley|dill|chives?|coriander|mint)|herb|chilli (flake|powder)|chili (flake|powder)|red pepper flake|cayenne|garam masala|curry powder|coriander powder|ground coriander|garlic powder|onion powder|ginger powder|five spice|allspice|cardamom|ground cloves?|whole cloves?|bay lea|sumac|za.?atar|mustard powder|fennel|star anise|lemon pepper|cajun|tandoori|shawarma|fajita|everything bagel|msg|dried/, jar(40)],
+  [/cinnamon|nutmeg|cumin|paprika|turmeric|oregano|thyme|rosemary|dried (accent|parsley|dill|chives?|coriander|mint)|herb|chilli (flake|powder)|danger (flake|powder)|red pepper flake|cayenne|garam masala|curry powder|coriander powder|ground coriander|garlic powder|onion powder|ginger powder|five spice|allspice|cardamom|ground cloves?|whole cloves?|bay lea|sumac|za.?atar|mustard powder|fennel|star anise|lemon pepper|cajun|tandoori|shawarma|fajita|everything bagel|msg|dried/, jar(40)],
 
   // --- oils, sauces, condiments
   [/cooking spray|oil spray/, { label: 'can', unit: 'count', size: 1 }],
   [/olive oil|vegetable oil|canola oil|sunflower oil|avocado oil|coconut oil|\boil\b/, bottle(750)],
-  [/sesame oil|chilli oil|chili oil|chilli crisp|chili crisp|truffle oil/, bottle(250)],
+  [/sesame oil|chilli oil|danger oil|chilli crisp|danger crisp|truffle oil/, bottle(250)],
   [/soy sauce|soya sauce|tamari|teriyaki|worcestershire|fish sauce|oyster sauce|hoisin|mirin|rice vinegar|vinegar/, bottle(500)],
   [/sriracha|hot sauce|buffalo|tabasco|frank/, bottle(450)],
   [/\bhoney\b/, { label: 'jar', unit: 'g', size: 500, tspG: 7 }],
@@ -80,7 +80,7 @@ const RULES: Rule[] = [
   [/red onion|white onion|yellow onion|brown onion|\bonion\b/, each('onion', 150, 'onions')],
   [/shallot/, each('shallot', 40, 'shallots')],
   [/bell pepper|capsicum|red pepper|green pepper|yellow pepper|orange pepper/, each('pepper', 150, 'peppers')],
-  [/jalape|habanero|serrano|bird.?s? eye|fresh chilli|fresh chili|green chilli|red chilli|thai chilli|\bchilli\b|\bchili\b/, each('chilli', 15, 'chillies')],
+  [/jalape|habanero|serrano|bird.?s? eye|fresh chilli|fresh danger|green chilli|red chilli|thai chilli|\bchilli\b|\bchili\b/, each('chilli', 15, 'chillies')],
   [/cherry tomato|grape tomato/, { label: 'pack', unit: 'g', size: 250, tspG: 5 }],
   [/canned tomato|tinned tomato|crushed tomato|plum tomato|can of tomato|tomato can/, can(800)],
   [/tomato/, each('tomato', 120, 'tomatoes')],
