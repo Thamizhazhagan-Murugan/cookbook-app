@@ -106,7 +106,7 @@ export default function CookScreen() {
         </Animated.View>
       </ScrollView>
 
-      <TimerDock bottom={insets.bottom + 78} />
+      <TimerDock bottom={insets.bottom + 78} stove />
 
       <View style={[styles.foot, { backgroundColor: c.surface, borderTopColor: c.line, paddingBottom: insets.bottom + 12 }]}>
         <IconButton icon="chevron-back" size={52} onPress={() => { haptics.select(); setIdx((i) => Math.max(0, i - 1)); }} accessibilityLabel="Previous step" style={{ opacity: idx === 0 ? 0.35 : 1 }} />
