@@ -7,7 +7,8 @@ import Animated, { LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Card, Chip, Empty, IconButton, Press, T } from '@/components/ui';
-import { AISLE_ORDER, STAPLE_AISLES, ingKey, pantryItemFrom } from '@/lib/grocery';
+import { AISLE_ORDER, ingKey, pantryItemFrom, pantryQty } from '@/lib/grocery';
+import { fmtStock, packFor, packLabel } from '@/lib/packs';
 import * as haptics from '@/lib/haptics';
 import { RECIPES, STAPLES } from '@/lib/recipes';
 import type { PantryItem } from '@/lib/types';
@@ -22,7 +23,7 @@ export default function PantryScreen() {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
   const pantry = useStore((s) => s.profile.pantry);
-  const { pantryAdd, pantryRemove, pantryClear, showToast } = useStore();
+  const { pantryAdd, pantryRemove, pantryClear, pantryAdjust, showToast } = useStore();
   const [text, setText] = useState('');
   const [showStaples, setShowStaples] = useState(false);
   const items = useMemo(() => Object.values(pantry).sort((a, b) => AISLE_ORDER.indexOf(a.aisle) - AISLE_ORDER.indexOf(b.aisle) || a.name.localeCompare(b.name)), [pantry]);
@@ -35,7 +36,15 @@ export default function PantryScreen() {
   const add = (name: string) => {
     const key = ingKey(name);
     if (!key) return;
-    pantryAdd(pantryItemFrom({ key, name: name.trim(), aisle: AISLE_BY_KEY[key] || 'Other' }, 'manual'));
+    const aisle = AISLE_BY_KEY[key] || 'Other';
+    const existing = pantry[key];
+    if (existing) {
+      pantryAdjust(key, 1);
+    } else {
+      pantryAdd(pantryItemFrom({ key, name: name.trim(), aisle }, 'manual'));
+    }
+    const pack = packFor(key, name, aisle);
+    showToast(`${name.trim()}: ${packLabel(1, pack, name.trim())} added`);
     haptics.select();
   };
 
@@ -50,7 +59,7 @@ export default function PantryScreen() {
           {items.length ? <Button label="Clear all" kind="ghost" size="sm" onPress={() => { pantryClear(); haptics.warn(); showToast('Pantry cleared'); }} /> : null}
         </View>
         <T v="small" color="muted" style={{ marginBottom: 12 }}>
-          Things you already have at home. Grocery lists skip them, and the recipe picker counts them as &quot;nothing new to buy&quot;. Staples you tick off while shopping land here automatically.
+          What you have at home, with roughly how much. Grocery lists only ask for an item when there isn&apos;t enough left. Everything you tick off while shopping lands here with the amount bought, and each week&apos;s cooking is taken off once the week is over.
         </T>
 
         <View style={[styles.addRow, { backgroundColor: c.surface, borderColor: c.line }]}>
@@ -59,7 +68,7 @@ export default function PantryScreen() {
           {text.trim() ? <Button label="Add" kind="primary" size="sm" onPress={() => { add(text); setText(''); }} /> : null}
         </View>
 
-        {!items.length ? <Empty icon="file-tray-outline" title="Pantry is empty" body="Add staples you keep at home, or tick items as bought on a grocery list and finish shopping." /> : null}
+        {!items.length ? <Empty icon="file-tray-outline" title="Pantry is empty" body="Tick items as bought on the grocery list and press Finish shopping — they land here with the amount. Or add what you already keep at home." /> : null}
 
         {groups.map(([aisle, list]) => (
           <Animated.View key={aisle} layout={LinearTransition} style={{ marginBottom: 14 }}>
@@ -67,27 +76,32 @@ export default function PantryScreen() {
               <T v="smallSemi" color="muted">
                 {aisle}
               </T>
-              {!STAPLE_AISLES.has(aisle) ? (
-                <T v="tiny" color="muted">
-                  perishable — remove when used up
-                </T>
-              ) : null}
+
             </View>
             <Card pad={false} style={{ paddingHorizontal: 12 }}>
-              {list.map((i, idx) => (
-                <View key={i.key} style={[styles.row, { borderBottomColor: c.line, borderBottomWidth: idx === list.length - 1 ? 0 : StyleSheet.hairlineWidth }]}>
-                  <Ionicons name="checkmark-circle" size={20} color={c.basil} />
-                  <View style={{ flex: 1 }}>
-                    <T v="body" style={{ fontSize: 15.5 }}>
-                      {i.name}
-                    </T>
-                    <T v="tiny" color="muted">
-                      {i.source === 'bought' ? 'from a finished shop' : i.source === 'carried' ? 'carried over' : 'added by you'} · {new Date(i.addedAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                    </T>
+              {list.map((i, idx) => {
+                const pack = packFor(i.key, i.name, i.aisle);
+                const qty = pantryQty(i, pack);
+                return (
+                  <View key={i.key} style={[styles.row, { borderBottomColor: c.line, borderBottomWidth: idx === list.length - 1 ? 0 : StyleSheet.hairlineWidth }]}>
+                    <View style={{ flex: 1 }}>
+                      <T v="body" style={{ fontSize: 15.5 }}>
+                        {i.name}
+                      </T>
+                      <T v="tiny" color="muted">
+                        <T v="tiny" color="basil" style={{ fontFamily: fonts.bodySemi }}>
+                          {fmtStock(qty, pack, i.name)}
+                        </T>
+                        {' · '}
+                        {i.source === 'bought' ? 'bought' : 'added'} {new Date(i.updatedAt || i.addedAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                      </T>
+                    </View>
+                    <IconButton icon="remove" size={30} onPress={() => { pantryAdjust(i.key, -1); haptics.select(); }} accessibilityLabel={`One ${pack.label || 'pack'} less of ${i.name}`} />
+                    <IconButton icon="add" size={30} onPress={() => { pantryAdjust(i.key, 1); haptics.select(); }} accessibilityLabel={`Add one ${pack.label || 'pack'} of ${i.name}`} />
+                    <IconButton icon="close" size={30} onPress={() => { pantryRemove(i.key); haptics.select(); }} accessibilityLabel={`Used up ${i.name}`} />
                   </View>
-                  <IconButton icon="close" size={30} onPress={() => { pantryRemove(i.key); haptics.select(); }} accessibilityLabel={`Remove ${i.name}`} />
-                </View>
-              ))}
+                );
+              })}
             </Card>
           </Animated.View>
         ))}

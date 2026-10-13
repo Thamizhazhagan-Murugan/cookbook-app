@@ -9,11 +9,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RecipeRow } from '@/components/RecipeCard';
 import { Sheet } from '@/components/Sheet';
 import { Button, Card, CheckRow, IconButton, Press, Stepper, T } from '@/components/ui';
-import { buildGroceryList, splitList } from '@/lib/grocery';
 import * as haptics from '@/lib/haptics';
 import { RECIPE_BY_ID } from '@/lib/recipes';
 import { DAY_KEYS, type DayKey, type SlotKey } from '@/lib/types';
 import { DAY_LONG, SLOT_LABELS, dayDate, mealsOf, shiftWeek, todayKey, weekIdFor, weekRangeLabel, weekRelativeLabel } from '@/lib/week';
+import { useGroceryList } from '@/store/selectors';
 import { useStore } from '@/store/useStore';
 import { fonts, radius, useTheme } from '@/theme';
 
@@ -24,13 +24,13 @@ export default function PlanScreen() {
   const week = useStore((s) => s.weeks[weekId]);
   const weeks = useStore((s) => s.weeks);
   const slots = useStore((s) => s.profile.settings.slots);
-  const pantry = useStore((s) => s.profile.pantry);
   const { selectWeek, setMeal, setMealServings, repeatMeal, copyWeek, clearWeek, showToast } = useStore();
   const [menu, setMenu] = useState<{ day: DayKey; slot: SlotKey } | null>(null);
   const [repeatDays, setRepeatDays] = useState<DayKey[]>([]);
   const [more, setMore] = useState(false);
 
   const meals = mealsOf(week);
+  const grocery = useGroceryList(weekId);
   const today = todayKey();
   const isCurrent = weekId === weekIdFor();
   const stats = useMemo(() => {
@@ -43,9 +43,8 @@ export default function PlanScreen() {
     }
     const days = Object.keys(perDay).length;
     const avg = days ? Math.round(Object.values(perDay).reduce((a, b) => a + b, 0) / days) : 0;
-    const g = week ? splitList(buildGroceryList(week, { pantry })) : null;
-    return { servings, avg, toBuy: g?.toBuy.length ?? 0, have: g?.have.length ?? 0 };
-  }, [meals, week, pantry]);
+    return { servings, avg, toBuy: grocery.toBuy.length, have: grocery.have.length };
+  }, [meals, grocery]);
   const lastWeekId = shiftWeek(weekId, -1);
   const canCopyLast = !meals.length && mealsOf(weeks[lastWeekId]).length > 0;
   const menuMeal = menu ? week?.days[menu.day]?.[menu.slot] : undefined;

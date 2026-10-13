@@ -14,7 +14,7 @@ export type Coverage = {
 export function coverage(week: Week | undefined, pantry: Record<string, PantryItem>, recipes: Record<string, Recipe> = RECIPE_BY_ID): Coverage {
   const fromPlan = new Set<string>();
   if (week) for (const id of Object.keys(servingsByRecipe(week))) for (const k of recipes[id]?.keys || []) fromPlan.add(k);
-  const fromPantry = new Set(Object.keys(pantry));
+  const fromPantry = new Set(Object.entries(pantry).filter(([, it]) => it.qty == null || it.qty > 0).map(([k]) => k));
   return { keys: new Set([...fromPlan, ...fromPantry]), fromPlan, fromPantry };
 }
 

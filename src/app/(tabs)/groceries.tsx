@@ -9,10 +9,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Sheet } from '@/components/Sheet';
 import { Button, Card, CheckRow, Chip, Empty, IconButton, Press, T } from '@/components/ui';
-import { buildGroceryList, groupByAisle, listAsText, splitList } from '@/lib/grocery';
+import { groupByAisle, listAsText } from '@/lib/grocery';
 import * as haptics from '@/lib/haptics';
 import type { GroceryItem } from '@/lib/types';
 import { countMeals, weekRangeLabel, weekRelativeLabel } from '@/lib/week';
+import { useGroceryList } from '@/store/selectors';
 import { useStore } from '@/store/useStore';
 import { fonts, radius, useTheme } from '@/theme';
 
@@ -21,15 +22,13 @@ export default function GroceriesScreen() {
   const insets = useSafeAreaInsets();
   const weekId = useStore((s) => s.currentWeekId);
   const week = useStore((s) => s.weeks[weekId]);
-  const pantry = useStore((s) => s.profile.pantry);
   const { toggleChecked, setHave, addExtra, removeExtra, resetChecked, finishShopping, showToast, pantryRemove } = useStore();
   const [text, setText] = useState('');
   const [showHave, setShowHave] = useState(false);
   const [showBought, setShowBought] = useState(true);
   const [item, setItem] = useState<GroceryItem | null>(null);
 
-  const list = useMemo(() => buildGroceryList(week, { pantry }), [week, pantry]);
-  const { toBuy, bought, have } = useMemo(() => splitList(list), [list]);
+  const { list, toBuy, bought, have } = useGroceryList(weekId);
   const groups = useMemo(() => groupByAisle(toBuy), [toBuy]);
   const meals = countMeals(week);
 
@@ -51,40 +50,46 @@ export default function GroceriesScreen() {
     const go = () => {
       const n = finishShopping(weekId);
       haptics.success();
-      showToast(n ? `${n} staple${n === 1 ? '' : 's'} added to your pantry` : 'Shopping finished');
+      showToast(n ? `${n} item${n === 1 ? '' : 's'} added to your pantry` : 'Shopping finished', n ? { label: 'See pantry', href: '/pantry' } : undefined);
     };
     if (Platform.OS === 'web') go();
-    else Alert.alert('Finish shopping?', 'Ticked spices, sauces and other staples will be remembered in your pantry so next week\'s list skips them.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Finish', onPress: go }]);
+    else Alert.alert('Finish shopping?', `${bought.length} ticked item${bought.length === 1 ? '' : 's'} will be added to your pantry with the amount bought. The app takes off what this week's recipes use once the week is over.`, [{ text: 'Cancel', style: 'cancel' }, { text: 'Finish', onPress: go }]);
   };
 
-  const Row = ({ i }: { i: GroceryItem }) => (
-    <CheckRow round checked={i.checked} onToggle={() => toggleChecked(weekId, i.key)}>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-        <View style={{ flex: 1 }}>
-          <T v="body" style={{ fontSize: 15.5, lineHeight: 20, textDecorationLine: i.checked ? 'line-through' : 'none', color: i.checked ? c.muted : c.ink }}>
-            {i.qtyStr ? <T v="body" style={{ fontFamily: fonts.bodyBold, fontSize: 15.5, color: i.checked ? c.muted : c.ink }}>{i.qtyStr} </T> : null}
-            {i.name}
-            {i.notes.length ? (
-              <T v="small" color="muted">
-                {' '}
-                · {i.notes.join('; ')}
+  const Row = ({ i }: { i: GroceryItem }) => {
+    const lead = i.buy ? i.buy.label : i.qtyStr;
+    const detail = [i.buy && i.qtyStr ? `need ${i.qtyStr}` : '', i.haveText ? `have ${i.haveText}` : ''].filter(Boolean).join(' · ');
+    return (
+      <CheckRow round checked={i.checked} onToggle={() => toggleChecked(weekId, i.key)}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+          <View style={{ flex: 1 }}>
+            <T v="body" style={{ fontSize: 15.5, lineHeight: 20, textDecorationLine: i.checked ? 'line-through' : 'none', color: i.checked ? c.muted : c.ink }}>
+              {lead ? <T v="body" style={{ fontFamily: fonts.bodyBold, fontSize: 15.5, color: i.checked ? c.muted : c.ink }}>{lead} </T> : null}
+              {i.name}
+              {i.notes.length ? (
+                <T v="small" color="muted">
+                  {' '}
+                  · {i.notes.join('; ')}
+                </T>
+              ) : null}
+            </T>
+            {detail || i.sources.length ? (
+              <T v="tiny" color="muted" numberOfLines={1}>
+                {detail}
+                {detail && i.sources.length ? ' · ' : ''}
+                {i.sources
+                  .slice(0, 2)
+                  .map((s) => s.title)
+                  .join(', ')}
+                {i.sources.length > 2 ? ` +${i.sources.length - 2} more` : ''}
               </T>
             ) : null}
-          </T>
-          {i.sources.length ? (
-            <T v="tiny" color="muted" numberOfLines={1}>
-              {i.sources
-                .slice(0, 2)
-                .map((s) => s.title)
-                .join(', ')}
-              {i.sources.length > 2 ? ` +${i.sources.length - 2} more` : ''}
-            </T>
-          ) : null}
+          </View>
+          <IconButton icon="ellipsis-horizontal" size={28} onPress={() => setItem(i)} accessibilityLabel={`Options for ${i.name}`} style={{ marginTop: -2 }} />
         </View>
-        <IconButton icon="ellipsis-horizontal" size={28} onPress={() => setItem(i)} accessibilityLabel={`Options for ${i.name}`} style={{ marginTop: -2 }} />
-      </View>
-    </CheckRow>
-  );
+      </CheckRow>
+    );
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: c.canvas }}>
@@ -127,10 +132,25 @@ export default function GroceriesScreen() {
           {text.trim() ? <Button label="Add" kind="primary" size="sm" onPress={() => { addExtra(weekId, text); setText(''); haptics.select(); }} /> : null}
         </View>
 
+        {bought.length ? (
+          <Card style={{ marginBottom: 14, backgroundColor: c.basilSoft, borderColor: 'transparent' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <T v="bodySemi">
+                  {bought.length} item{bought.length === 1 ? '' : 's'} in the basket
+                </T>
+                <T v="small" color="muted">
+                  Done shopping? They go into your pantry with the amount bought, so next week&apos;s list skips what you still have.
+                </T>
+              </View>
+              <Button label="Finish shopping" icon="bag-check-outline" kind="primary" size="sm" onPress={finish} />
+            </View>
+          </Card>
+        ) : null}
         {!list.length ? (
           <Empty icon="cart-outline" title="Your list is empty" body="Plan some meals and the ingredients land here, merged and sorted by aisle." action={<Button label="Plan the week" kind="primary" icon="calendar-outline" onPress={() => router.push('/')} />} />
         ) : !toBuy.length ? (
-          <Empty icon="checkmark-done" title="All bought" body={bought.length ? 'Everything is in the basket. Finish shopping to remember the staples you bought.' : 'Everything you need is already in your pantry.'} />
+          <Empty icon="checkmark-done" title="All bought" body={bought.length ? 'Everything is in the basket. Finish shopping to add it all to your pantry.' : 'Everything you need is already in your pantry.'} />
         ) : null}
 
         {groups.map((g) => (
@@ -190,7 +210,7 @@ export default function GroceriesScreen() {
                       {i.qtyStr ? ` · needs ${i.qtyStr}` : ''}
                     </T>
                     <T v="tiny" color="basil">
-                      {i.inPantry ? 'pantry' : 'have'}
+                      {i.haveText || 'have'}
                     </T>
                   </Press>
                 ))}
@@ -215,7 +235,19 @@ export default function GroceriesScreen() {
       <Sheet open={!!item} onClose={() => setItem(null)} title={item?.name}>
         {item ? (
           <View style={{ gap: 10, paddingBottom: 8 }}>
-            {item.qtyStr ? <T v="body">Needed: {item.qtyStr}</T> : null}
+            {item.buy ? (
+              <T v="body">
+                Buy <T v="bodySemi">{item.buy.label}</T>
+                {item.qtyStr ? ` · recipes need ${item.qtyStr}` : ''}
+              </T>
+            ) : item.qtyStr ? (
+              <T v="body">Recipes need {item.qtyStr}</T>
+            ) : null}
+            {item.haveText ? (
+              <T v="small" color="muted">
+                In your pantry: {item.haveText}
+              </T>
+            ) : null}
             {item.sources.length ? (
               <View>
                 <T v="smallSemi" color="muted">

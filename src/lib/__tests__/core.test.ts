@@ -127,12 +127,14 @@ describe('grocery', () => {
     expect(custom!.qtyStr).toBe('2');
     const carry = carryOverCandidates(list).map((i) => i.key);
     expect(carry).toContain('smoked paprika');
-    expect(carry).not.toContain('chicken breast'); // perishable
+    expect(carry).toContain('chicken breast'); // everything bought is tracked, with its amount
     expect(carry).not.toContain('custom:x1');
     const txt = listAsText(list, 'Groceries');
     expect(txt).toContain('PRODUCE');
     expect(txt).not.toContain('Chicken Breasts'); // already bought
-    expect(parseCustom('1.5 kg potatoes').key).toBe('potatoe');
+    expect(parseCustom('1.5 kg potatoes').key).toBe('potato');
+    expect(ingKey('Juice of 1/2 Lemon')).toBe('lemon');
+    expect(ingKey('each Salt & Black Pepper')).toBe('salt');
     expect(ingKey('Raw Chicken Breasts, cubed')).toBe('chicken breasts cubed'.replace('breasts', 'breast'));
   });
 });

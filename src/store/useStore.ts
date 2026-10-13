@@ -4,9 +4,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import { buildGroceryList, carryOverCandidates, pantryItemFrom } from '@/lib/grocery';
+import { addToPantry, buildGroceryList, carryOverCandidates, pantryQty, weekUsage } from '@/lib/grocery';
+import { packFor } from '@/lib/packs';
 import type { CookProgress, DayKey, Meal, PantryItem, Profile, SlotKey, Timer, Week } from '@/lib/types';
-import { emptyWeek, mealPrepDays, weekIdFor } from '@/lib/week';
+import { emptyWeek, mealPrepDays, parseDateId, weekIdFor } from '@/lib/week';
 
 export type AccountInfo = { uid: string; isAnonymous: boolean; name?: string; email?: string; photo?: string };
 
@@ -54,6 +55,10 @@ export type AppState = {
   pantryAdd: (item: PantryItem) => void;
   pantryRemove: (key: string) => void;
   pantryClear: () => void;
+  /** Change stock by a number of packs (+1 / -1). Removes the item when it reaches zero. */
+  pantryAdjust: (key: string, packs: number) => void;
+  /** Deduct the meals of finished weeks that have ended from the pantry (idempotent). */
+  settleWeeks: () => number;
   setSlots: (slots: SlotKey[]) => void;
   setMealPrep: (on: boolean) => void;
   saveCooking: (p: CookProgress) => void;
@@ -177,7 +182,11 @@ export const useStore = create<AppState>()(
           const list = buildGroceryList(week, { pantry: s.profile.pantry });
           const carry = carryOverCandidates(list);
           updProfile((p) => {
-            for (const i of carry) p.pantry[i.key] = pantryItemFrom(i, 'bought');
+            for (const i of carry) {
+              const pack = packFor(i.key, i.name, i.aisle);
+              const bought = i.buy?.base ?? pack.size;
+              p.pantry[i.key] = addToPantry(p.pantry[i.key], i, bought, 'bought');
+            }
           });
           updWeek(weekId, (w) => (w.finishedAt = now()));
           return carry.length;
@@ -192,6 +201,42 @@ export const useStore = create<AppState>()(
         pantryAdd: (item) => updProfile((p) => (p.pantry[item.key] = item)),
         pantryRemove: (key) => updProfile((p) => delete p.pantry[key]),
         pantryClear: () => updProfile((p) => (p.pantry = {})),
+        pantryAdjust: (key, packs) =>
+          updProfile((p) => {
+            const it = p.pantry[key];
+            if (!it) return;
+            const pack = packFor(it.key, it.name, it.aisle);
+            const q = pantryQty(it, pack) + packs * pack.size;
+            if (q <= 0.01) delete p.pantry[key];
+            else p.pantry[key] = { ...it, qty: Math.round(q * 100) / 100, unit: pack.unit, updatedAt: now() };
+          }),
+        settleWeeks: () => {
+          const s = get();
+          const t = now();
+          const due = Object.values(s.weeks).filter((w) => w.finishedAt && !w.consumedAt && parseDateId(w.id).getTime() + 7 * 86400000 <= t);
+          if (!due.length) return 0;
+          let touched = 0;
+          updProfile((p) => {
+            for (const w of due) {
+              const usage = weekUsage(w);
+              for (const [key, used] of Object.entries(usage)) {
+                const it = p.pantry[key];
+                if (!it) continue;
+                const pack = packFor(it.key, it.name, it.aisle);
+                const left = pantryQty(it, pack) - used;
+                touched++;
+                if (left <= pack.size * 0.03) delete p.pantry[key];
+                else p.pantry[key] = { ...it, qty: Math.round(left * 100) / 100, unit: pack.unit, updatedAt: t };
+              }
+            }
+          });
+          set((st) => {
+            const weeks = { ...st.weeks };
+            for (const w of due) weeks[w.id] = { ...weeks[w.id], consumedAt: t, updatedAt: t };
+            return { weeks };
+          });
+          return touched;
+        },
         setSlots: (slots) => updProfile((p) => (p.settings.slots = slots)),
         setMealPrep: (on) => updProfile((p) => (p.settings.mealPrep = on)),
         saveCooking: (prog) => updProfile((p) => (p.cooking[prog.recipeId] = { ...prog, updatedAt: now() })),
@@ -256,6 +301,9 @@ export const useStore = create<AppState>()(
         if (state) {
           state.tickTimers();
           useStore.setState({ hydrated: true });
+          try {
+            state.settleWeeks();
+          } catch {}
         }
       },
     }

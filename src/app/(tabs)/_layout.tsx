@@ -5,7 +5,7 @@ import { Platform, View, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TimerDock } from '@/components/TimerDock';
-import { buildGroceryList, splitList } from '@/lib/grocery';
+import { useGroceryList } from '@/store/selectors';
 import { useStore } from '@/store/useStore';
 import { fonts, useTheme } from '@/theme';
 
@@ -19,10 +19,8 @@ function icon(on: IconName, off: IconName) {
 export default function TabLayout() {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
-  const toBuy = useStore((s) => {
-    const w = s.weeks[s.currentWeekId];
-    return w ? splitList(buildGroceryList(w, { pantry: s.profile.pantry })).toBuy.length : 0;
-  });
+  const weekId = useStore((s) => s.currentWeekId);
+  const toBuy = useGroceryList(weekId).toBuy.length;
   const barHeight = 58 + (Platform.OS === 'web' ? 0 : insets.bottom);
   return (
     <View style={{ flex: 1 }}>

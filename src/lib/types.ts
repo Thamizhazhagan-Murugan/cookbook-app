@@ -55,6 +55,8 @@ export type Week = {
   checked: Record<string, boolean>; // grocery key -> bought
   have: Record<string, boolean>; // grocery key -> "already have" override for this week
   finishedAt?: number;
+  /** Set once this week's planned meals have been deducted from the pantry. */
+  consumedAt?: number;
   updatedAt: number;
 };
 
@@ -63,7 +65,11 @@ export type PantryItem = {
   name: string;
   aisle: string;
   addedAt: number;
+  updatedAt?: number;
   source: 'bought' | 'manual' | 'carried';
+  /** Amount at home in the pack's base unit (g / ml / count). Missing = "have some" (legacy). */
+  qty?: number;
+  unit?: 'g' | 'ml' | 'count';
 };
 
 export type CookProgress = {
@@ -92,13 +98,18 @@ export type GroceryItem = {
   key: string;
   name: string;
   aisle: string;
-  qtyStr: string;
+  qtyStr: string; // what the recipes need, e.g. "2 ½ tbsp"
   notes: string[];
   sources: GrocerySource[];
-  have: boolean; // in pantry or overridden as "already have"
+  have: boolean; // enough in the pantry, or overridden as "already have"
   inPantry: boolean;
   checked: boolean;
   custom?: { id: string };
+  needBase: number | null; // recipe need in the pack's base unit
+  haveBase: number; // pantry stock in the pack's base unit
+  haveText: string; // "≈ ½ bottle"
+  buy: { packs: number; label: string; base: number } | null; // what to buy, e.g. "1 bottle"
+  packUnit: 'g' | 'ml' | 'count';
 };
 
 export type Timer = {
