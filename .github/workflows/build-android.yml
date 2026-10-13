@@ -1,0 +1,120 @@
+name: Build Android APK
+
+# Every push to main builds a release APK and publishes it under Releases → "latest".
+# Download the .apk on your phone and open it to install (allow "install from this source").
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: 1
+      EXPO_NO_TELEMETRY: 1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check, lint and test
+        run: |
+          npm run typecheck
+          npm run lint
+          npm test -- --ci
+
+      # Optional: store the base64 of google-services.json as the repo secret GOOGLE_SERVICES_JSON
+      # (Settings → Secrets and variables → Actions). Enables Google sign-in in the APK.
+      - name: Restore google-services.json
+        env:
+          GSJ: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GSJ" ]; then
+            echo "$GSJ" | base64 -d > google-services.json
+            echo "google-services.json restored from secret"
+          elif [ -f google-services.json ]; then
+            echo "google-services.json found in repo"
+          else
+            echo "No google-services.json — building without native Google sign-in"
+          fi
+
+      - name: Generate the native Android project
+        run: npx expo prebuild --platform android --no-install
+
+      # Optional: your own signing key. Add secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+      # ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD. Without them the APK is signed with the standard
+      # Android debug key (SHA-1 5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25).
+      - name: Configure release signing
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > android/app/release.keystore
+            node scripts/use-release-keystore.js
+            echo "Signing with your release keystore"
+          else
+            echo "Signing with the debug keystore"
+          fi
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Name the APK
+        id: apk
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk out/cookbook.apk
+          echo "size=$(du -h out/cookbook.apk | cut -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cookbook-apk
+          path: out/cookbook.apk
+          if-no-files-found: error
+
+      - name: Publish to Releases
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Cookbook build ${{ github.run_number }}
+          body: |
+            APK built from `${{ github.sha }}` (${{ steps.apk.outputs.size }}).
+
+            **Install:** download `cookbook.apk` on your Android phone and open it. If Android asks, allow installs from your browser. Updates install over the previous build.
+          files: out/cookbook.apk
+          make_latest: true

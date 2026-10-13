@@ -13,21 +13,19 @@ Built with **TypeScript + React Native (Expo SDK 57)**, Expo Router, Zustand, Fi
 
 ---
 
-## 1. Run it on your phone (5 minutes)
+## 1. Install it on your phone (no computer needed)
 
-You need **Node.js 20 or newer** on your computer (https://nodejs.org) and the free **Expo Go** app on your phone (Play Store / App Store).
+Every push to `main` builds the Android app on GitHub (see `.github/workflows/build-android.yml`) and publishes the APK:
 
-```bash
-cd cookbook-app
-npm install
-npx expo start
-```
+1. On your phone open **https://github.com/Thamizhazhagan-Murugan/cookbook-app/releases/latest**
+2. Download **`cookbook.apk`** and open it. If Android asks, allow installs from your browser.
+3. Done — the app is on your home screen. New builds install over the old one (same signing key), your data stays.
 
-A QR code appears in the terminal. Open Expo Go on your phone and scan it (Android: "Scan QR code" in Expo Go; iPhone: use the Camera app). Phone and computer must be on the same Wi-Fi. If they are not, run `npx expo start --tunnel` instead.
+The build takes about 15 minutes after each push; the Actions tab shows progress. The APK is signed with the standard Android debug key, which is fine for your own phone. For a private key, add the four `ANDROID_*` secrets described in the workflow file.
 
-Edits you make to the code reload on the phone instantly.
+### Developing on a computer (optional)
 
-To try it in a browser instead: `npx expo start --web`.
+With Node.js 20+ installed: `npm install`, then `npx expo start` and scan the QR code with the **Expo Go** app — edits reload on the phone instantly. Everything except Google sign-in works in Expo Go. `npx expo start --web` runs it in a browser.
 
 ## 2. Turn on cloud backup (Firebase) + Google sign-in
 
@@ -44,13 +42,12 @@ The app runs in local-only mode until you add a Firebase project. It's free (Spa
 
 ### 2b. Google sign-in (keeps your data when you change phones)
 
-Google's native sign-in can't run inside Expo Go, so this part works in the **installed app** (step 3) and on the web (`npx expo start --web`).
+Google's native sign-in can't run inside Expo Go, so this part works in the **installed APK** (step 1) and on the web.
 
 1. **Authentication → Sign-in method → Google → Web SDK configuration** → copy the **Web client ID** into `googleWebClientId` in `src/firebaseConfig.ts`.
-2. Register the Android app: **Project settings → Your apps → Add app → Android**, package name **`com.thamizh.cookbook`**.
-   - It asks for a **SHA-1**. Get it from EAS: `eas credentials -p android` → choose *production* (or *preview*) → "Keystore: Set up / View" → copy the SHA-1 fingerprint. (If you haven't built yet, run `eas build -p android --profile preview` once first — EAS creates the keystore.)
-   - Download **`google-services.json`** and put it in the project root (next to `package.json`). It's git-ignored; `app.config.js` picks it up automatically and enables the native Google Sign-In plugin.
-3. Rebuild: `eas build -p android --profile preview`, install the APK, open **Pantry & more → Continue with Google**.
+2. Register the Android app: **Project settings → Your apps → Add app → Android**, package name **`com.thamizh.cookbook`**, SHA-1 **`5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25`** (the debug key the GitHub build signs with; use your own key's SHA-1 if you set the `ANDROID_*` secrets).
+3. Download **`google-services.json`**. Either commit it to the repo (keep the repo private) or store it as the GitHub secret **`GOOGLE_SERVICES_JSON`** (its contents base64-encoded). The build picks it up and enables the native Google Sign-In plugin.
+4. Push → wait for the build → install the new APK → **Pantry & more → Continue with Google**.
 
 What happens on sign-in:
 - First time: your anonymous device account is **upgraded in place** — same ID, nothing moves.
@@ -68,9 +65,9 @@ users/{uid}/weeks/{YYYY-MM-DD}   one document per planned week (Monday date), in
 
 Sync is last-write-wins by `updatedAt`, pushed a moment after each change and pulled live from the server.
 
-## 3. Install it as a real app (APK)
+## 3. Building with EAS instead (optional)
 
-Expo's build service compiles the app in the cloud, no Android Studio needed:
+If you'd rather use Expo's build service than GitHub Actions:
 
 ```bash
 npm install -g eas-cli
