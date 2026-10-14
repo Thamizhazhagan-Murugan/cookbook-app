@@ -57,6 +57,7 @@ export default function MoreScreen() {
       <T v="display">Pantry & more</T>
 
       <Card pad={false} style={{ paddingHorizontal: 14 }}>
+        <RowLink icon="nutrition-outline" title="Nutrition" sub="Macros, vitamins and minerals for each planned day — and what would fill the gaps" onPress={() => router.push('/nutrition')} />
         <RowLink icon="file-tray-full-outline" title="Pantry" sub={`${Object.keys(pantry).length} item${Object.keys(pantry).length === 1 ? '' : 's'} you already have — skipped on grocery lists`} onPress={() => router.push('/pantry')} />
         <RowLink icon="time-outline" title="Past weeks" sub={`${pastWeeks} planned week${pastWeeks === 1 ? '' : 's'} saved`} onPress={() => router.push('/history')} />
         <RowLink icon="heart-outline" title="Favourites" sub={`${favorites.length} recipe${favorites.length === 1 ? '' : 's'}`} onPress={() => router.push('/recipes')} last />

@@ -1,4 +1,5 @@
 // Recipe guide: ingredients (scalable, tickable), method with one-tap timers, resume/clear cooking.
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useState } from 'react';
@@ -7,13 +8,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Sheet } from '@/components/Sheet';
 import { TimerChips } from '@/components/TimerChips';
-import { Button, Card, CheckRow, Chip, IconButton, Stepper, T } from '@/components/ui';
+import { Button, Card, CheckRow, Chip, IconButton, Press, Stepper, T } from '@/components/ui';
 import { PHOTOS } from '@/data/photos';
 import * as haptics from '@/lib/haptics';
 import { ingredientLine } from '@/lib/quantities';
 import { RECIPE_BY_ID, minsText } from '@/lib/recipes';
+import { NUTRIENTS, fmtAmount, recipeNutrition, targetsFor, DEFAULT_BODY } from '@/lib/nutrition';
 import { STEP_KIND_LABEL, stepKind } from '@/lib/steps';
-import { DAY_KEYS, SLOT_KEYS, type DayKey, type Macros, type SlotKey } from '@/lib/types';
+import { DAY_KEYS, SLOT_KEYS, type DayKey, type Macros, type Recipe, type SlotKey } from '@/lib/types';
 import { DAY_LABELS, SLOT_LABELS, dayDate, dayRangeLabel, mealPrepDays, todayKey, weekIdFor, weekRangeLabel } from '@/lib/week';
 import { useStore } from '@/store/useStore';
 import { radius, useTheme } from '@/theme';
@@ -136,6 +138,7 @@ export default function RecipeScreen() {
               per serving
             </T>
           ) : null}
+          <MicroPanel recipe={r} />
 
           {/* actions */}
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -321,6 +324,52 @@ export default function RecipeScreen() {
           />
         </View>
       </Sheet>
+    </View>
+  );
+}
+
+/** Estimated vitamins & minerals per serving, as a share of a day's target. */
+function MicroPanel({ recipe }: { recipe: Recipe }) {
+  const { c } = useTheme();
+  const body = useStore((s) => s.profile.settings.body);
+  const [open, setOpen] = useState(false);
+  const n = recipeNutrition(recipe);
+  const t = targetsFor(body ?? DEFAULT_BODY);
+  const rows = NUTRIENTS.filter((m) => m.group === 'vitamin' || m.group === 'mineral' || m.id === 'fibre' || m.id === 'sodium');
+  const strong = rows.filter((m) => m.group !== 'limit' && m.id !== 'sodium' && n.perServing[m.id] / t[m.id].value >= 0.33).map((m) => m.label);
+  return (
+    <View style={{ marginTop: -4 }}>
+      <Press haptic="select" onPress={() => setOpen((v) => !v)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <Ionicons name={open ? 'chevron-down' : 'chevron-forward'} size={16} color={c.muted} />
+        <T v="small" color="muted" style={{ flex: 1 }}>
+          Vitamins &amp; minerals{strong.length ? ` · good source of ${strong.slice(0, 3).join(', ')}` : ''}
+        </T>
+      </Press>
+      {open ? (
+        <View style={{ marginTop: 8, borderRadius: 12, backgroundColor: c.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: c.line, paddingHorizontal: 12, paddingVertical: 4 }}>
+          {rows.map((m) => {
+            const v = n.perServing[m.id];
+            const pct = Math.round((v / t[m.id].value) * 100);
+            const limit = t[m.id].kind === 'max';
+            return (
+              <View key={m.id} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 5, gap: 8 }}>
+                <T v="small" style={{ width: 110 }}>
+                  {m.label}
+                </T>
+                <View style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: c.surface2, overflow: 'hidden' }}>
+                  <View style={{ width: `${Math.min(100, pct)}%`, height: 5, backgroundColor: limit ? (pct > 50 ? c.danger : c.muted) : pct >= 33 ? c.highlight : c.accent }} />
+                </View>
+                <T v="tiny" color="muted" style={{ width: 92, textAlign: 'right' }}>
+                  {fmtAmount(m.id, v)} · {pct}%
+                </T>
+              </View>
+            );
+          })}
+          <T v="tiny" color="muted" style={{ marginVertical: 6 }}>
+            Per serving, as a share of a day&apos;s target. Estimated from the ingredients — the books don&apos;t list these.
+          </T>
+        </View>
+      ) : null}
     </View>
   );
 }

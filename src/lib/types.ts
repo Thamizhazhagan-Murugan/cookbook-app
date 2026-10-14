@@ -81,6 +81,17 @@ export type CookProgress = {
   updatedAt: number;
 };
 
+/** Used for daily nutrition targets. */
+export type BodyProfile = {
+  sex: 'male' | 'female';
+  age: number;
+  heightCm: number;
+  weightKg: number;
+  activity: 'sedentary' | 'light' | 'moderate' | 'active' | 'very';
+  goal: 'lose' | 'maintain' | 'gain';
+  proteinPerKg: number;
+};
+
 export type CookLogEntry = { recipeId: string; cookedAt: number };
 
 export type Profile = {
@@ -88,7 +99,7 @@ export type Profile = {
   pantry: Record<string, PantryItem>;
   cooking: Record<string, CookProgress>;
   cookLog: CookLogEntry[];
-  settings: { slots: SlotKey[]; mealPrep?: boolean };
+  settings: { slots: SlotKey[]; mealPrep?: boolean; body?: BodyProfile };
   updatedAt: number;
 };
 

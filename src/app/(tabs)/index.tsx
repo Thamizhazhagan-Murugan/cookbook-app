@@ -10,9 +10,10 @@ import { RecipeRow } from '@/components/RecipeCard';
 import { Sheet } from '@/components/Sheet';
 import { Button, Card, CheckRow, IconButton, Press, Stepper, T } from '@/components/ui';
 import * as haptics from '@/lib/haptics';
+import { DEFAULT_BODY, assess, dayNutrition, gaps, targetsFor } from '@/lib/nutrition';
 import { RECIPE_BY_ID } from '@/lib/recipes';
 import { DAY_KEYS, type DayKey, type SlotKey } from '@/lib/types';
-import { DAY_LONG, SLOT_LABELS, dayDate, mealsOf, shiftWeek, todayKey, weekIdFor, weekRangeLabel, weekRelativeLabel } from '@/lib/week';
+import { DAY_LABELS, DAY_LONG, SLOT_LABELS, dayDate, mealsOf, shiftWeek, todayKey, weekIdFor, weekRangeLabel, weekRelativeLabel } from '@/lib/week';
 import { useGroceryList } from '@/store/selectors';
 import { useStore } from '@/store/useStore';
 import { fonts, radius, useTheme } from '@/theme';
@@ -24,6 +25,7 @@ export default function PlanScreen() {
   const week = useStore((s) => s.weeks[weekId]);
   const weeks = useStore((s) => s.weeks);
   const slots = useStore((s) => s.profile.settings.slots);
+  const body = useStore((s) => s.profile.settings.body);
   const { selectWeek, setMeal, setMealServings, repeatMeal, copyWeek, clearWeek, showToast } = useStore();
   const [menu, setMenu] = useState<{ day: DayKey; slot: SlotKey } | null>(null);
   const [repeatDays, setRepeatDays] = useState<DayKey[]>([]);
@@ -39,12 +41,19 @@ export default function PlanScreen() {
     for (const m of meals) {
       const r = RECIPE_BY_ID[m.recipeId];
       servings += m.servings;
-      if (r?.macros.calories) perDay[m.day] = (perDay[m.day] || 0) + r.macros.calories * m.servings;
+      if (r?.macros.calories) perDay[m.day] = (perDay[m.day] || 0) + r.macros.calories; // one serving per meal, per person
     }
     const days = Object.keys(perDay).length;
     const avg = days ? Math.round(Object.values(perDay).reduce((a, b) => a + b, 0) / days) : 0;
     return { servings, avg, toBuy: grocery.toBuy.length, have: grocery.have.length };
   }, [meals, grocery]);
+  const nutrition = useMemo(() => {
+    const day = isCurrent ? today : (DAY_KEYS.find((d) => Object.keys(week?.days[d] ?? {}).length) ?? 'mon');
+    const n = dayNutrition(week, day, RECIPE_BY_ID);
+    if (!n.meals) return null;
+    const low = gaps(assess(n.totals, targetsFor(body ?? DEFAULT_BODY)));
+    return { day, kcal: Math.round(n.totals.kcal), protein: Math.round(n.totals.protein), low: low.length };
+  }, [week, isCurrent, today, body]);
   const lastWeekId = shiftWeek(weekId, -1);
   const canCopyLast = !meals.length && mealsOf(weeks[lastWeekId]).length > 0;
   const menuMeal = menu ? week?.days[menu.day]?.[menu.slot] : undefined;
@@ -82,7 +91,21 @@ export default function PlanScreen() {
             </View>
             <Ionicons name="cart-outline" size={22} color={c.accent} />
           </Press>
-        ) : (
+        ) : null}
+        {nutrition ? (
+          <Press haptic="none" onPress={() => router.push('/nutrition')} style={[styles.summary, { backgroundColor: c.surface, borderColor: c.line, marginTop: -6 }]}>
+            <View style={{ flex: 1 }}>
+              <T v="bodySemi">
+                {isCurrent ? 'Today' : DAY_LABELS[nutrition.day]}: {nutrition.kcal.toLocaleString()} kcal · {nutrition.protein} g protein
+              </T>
+              <T v="small" color="muted">
+                {nutrition.low ? `${nutrition.low} nutrient${nutrition.low === 1 ? '' : 's'} below target — see what would fill the gap` : 'All tracked nutrients covered'}
+              </T>
+            </View>
+            <Ionicons name="nutrition-outline" size={22} color={nutrition.low ? c.accent : c.highlight} />
+          </Press>
+        ) : null}
+        {!meals.length ? (
           <Card style={{ marginBottom: 14 }}>
             <T v="h3">Nothing planned yet</T>
             <T v="small" color="muted" style={{ marginTop: 2 }}>
@@ -103,7 +126,7 @@ export default function PlanScreen() {
               />
             ) : null}
           </Card>
-        )}
+        ) : null}
 
         {/* days */}
         {DAY_KEYS.map((day) => {
