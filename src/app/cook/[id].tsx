@@ -9,7 +9,7 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Sheet } from '@/components/Sheet';
-import { StepArt } from '@/components/StepArt';
+import { StepArtCard, timersForStep } from '@/components/StepArtCard';
 import { TimerChips } from '@/components/TimerChips';
 import { TimerDock } from '@/components/TimerDock';
 import { Button, CheckRow, IconButton, T } from '@/components/ui';
@@ -37,6 +37,7 @@ export default function CookScreen() {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
   const progress = useStore((s) => s.profile.cooking[id]);
+  const timers = useStore((s) => s.timers);
   const { saveCooking, logCook, addTimer, showToast } = useStore();
   const [idx, setIdx] = useState(progress?.step ?? 0);
   const [sheet, setSheet] = useState(false);
@@ -60,6 +61,7 @@ export default function CookScreen() {
   const s = r.steps[Math.min(idx, n - 1)];
   const last = idx >= n - 1;
   const kind = stepKind(s, idx, n);
+  const stepTimer = timersForStep(timers, s.n, r.title)[0];
   const f = r.servings ? servings / r.servings : 1;
   const ticks = progress?.ticks ?? {};
   const tick = (k: string) => saveCooking({ recipeId: r.id, step: idx, servings, startedAt: progress?.startedAt ?? Date.now(), updatedAt: Date.now(), ticks: { ...ticks, [k]: !ticks[k] } });
@@ -87,7 +89,7 @@ export default function CookScreen() {
       <ScrollView contentContainerStyle={{ padding: 22, paddingBottom: 160, gap: 10 }}>
         <Animated.View key={idx} entering={FadeIn.duration(160)} exiting={FadeOut.duration(100)}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-            <StepArt kind={kind} size={108} style={{ marginLeft: -6 }} />
+            <StepArtCard kind={kind} size={100} timer={stepTimer} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <T v="smallSemi" color="accent">
                 Step {s.n} of {n}
