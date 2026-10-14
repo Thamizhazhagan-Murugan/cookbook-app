@@ -14,7 +14,7 @@ const POT_LIGHT = '#3F5274';
 const FLAME = '#FF6A3D';
 const FLAME_CORE = '#FFC06A';
 
-function Steam({ p, x, s, color, i }: { p: SharedValue<number>; x: number; s: number; color: string; i: number }) {
+export function Steam({ p, x, s, color, i }: { p: SharedValue<number>; x: number; s: number; color: string; i: number }) {
   const st = useAnimatedStyle(() => {
     const t = p.value;
     return {
@@ -25,7 +25,7 @@ function Steam({ p, x, s, color, i }: { p: SharedValue<number>; x: number; s: nu
   return <Animated.View style={[{ position: 'absolute', left: (x - 4) * s, top: 24 * s, width: 8 * s, height: 15 * s, borderRadius: 99, backgroundColor: color }, st]} />;
 }
 
-function Flame({ f, x, s }: { f: SharedValue<number>; x: number; s: number }) {
+export function Flame({ f, x, s }: { f: SharedValue<number>; x: number; s: number }) {
   const st = useAnimatedStyle(() => ({ opacity: f.value === 0 ? 0 : 0.75 + f.value * 0.25, transform: [{ translateY: (1 - f.value) * 4 * s }, { rotate: '45deg' }, { scale: f.value }] }));
   return (
     <Animated.View style={[{ position: 'absolute', left: (x - 5) * s, top: 84 * s, width: 10 * s, height: 10 * s, borderRadius: 5 * s, borderTopLeftRadius: 0, backgroundColor: FLAME, alignItems: 'center', justifyContent: 'center' }, st]}>

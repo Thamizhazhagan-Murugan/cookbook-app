@@ -12,6 +12,7 @@ import { PHOTOS } from '@/data/photos';
 import * as haptics from '@/lib/haptics';
 import { ingredientLine } from '@/lib/quantities';
 import { RECIPE_BY_ID, minsText } from '@/lib/recipes';
+import { STEP_KIND_LABEL, stepKind } from '@/lib/steps';
 import { DAY_KEYS, SLOT_KEYS, type DayKey, type Macros, type SlotKey } from '@/lib/types';
 import { DAY_LABELS, SLOT_LABELS, dayDate, dayRangeLabel, mealPrepDays, todayKey, weekIdFor, weekRangeLabel } from '@/lib/week';
 import { useStore } from '@/store/useStore';
@@ -216,9 +217,14 @@ export default function RecipeScreen() {
             {r.steps.length ? (
               r.steps.map((s, i) => (
                 <View key={s.n} style={[styles.step, { borderTopColor: c.line, borderTopWidth: i ? StyleSheet.hairlineWidth : 0, opacity: progress && i < progress.step ? 0.55 : 1 }]}>
-                  <T v="num" color="accent" style={{ width: 34 }}>
-                    {s.n}
-                  </T>
+                  <View style={{ width: 44 }}>
+                    <T v="num" color="accent">
+                      {s.n}
+                    </T>
+                    <T v="tiny" color="muted">
+                      {STEP_KIND_LABEL[stepKind(s, i, r.steps.length)]}
+                    </T>
+                  </View>
                   <View style={{ flex: 1 }}>
                     {s.title ? (
                       <T v="h3" style={{ marginBottom: 2 }}>

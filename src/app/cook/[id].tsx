@@ -9,12 +9,14 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Sheet } from '@/components/Sheet';
+import { StepArt } from '@/components/StepArt';
 import { TimerChips } from '@/components/TimerChips';
 import { TimerDock } from '@/components/TimerDock';
 import { Button, CheckRow, IconButton, T } from '@/components/ui';
 import * as haptics from '@/lib/haptics';
 import { ingredientLine } from '@/lib/quantities';
 import { RECIPE_BY_ID } from '@/lib/recipes';
+import { STEP_KIND_LABEL, stepKind } from '@/lib/steps';
 import { useStore } from '@/store/useStore';
 import { fonts, useTheme } from '@/theme';
 
@@ -57,6 +59,7 @@ export default function CookScreen() {
   const n = r.steps.length;
   const s = r.steps[Math.min(idx, n - 1)];
   const last = idx >= n - 1;
+  const kind = stepKind(s, idx, n);
   const f = r.servings ? servings / r.servings : 1;
   const ticks = progress?.ticks ?? {};
   const tick = (k: string) => saveCooking({ recipeId: r.id, step: idx, servings, startedAt: progress?.startedAt ?? Date.now(), updatedAt: Date.now(), ticks: { ...ticks, [k]: !ticks[k] } });
@@ -83,15 +86,23 @@ export default function CookScreen() {
 
       <ScrollView contentContainerStyle={{ padding: 22, paddingBottom: 160, gap: 10 }}>
         <Animated.View key={idx} entering={FadeIn.duration(160)} exiting={FadeOut.duration(100)}>
-          <T v="smallSemi" color="accent">
-            Step {s.n} of {n}
-          </T>
-          {s.title ? (
-            <T v="h1" style={{ marginTop: 4 }}>
-              {s.title}
-            </T>
-          ) : null}
-          <T style={{ fontFamily: fonts.body, fontSize: 22, lineHeight: 32, marginTop: 12, color: c.ink }}>{s.text}</T>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+            <StepArt kind={kind} size={108} style={{ marginLeft: -6 }} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <T v="smallSemi" color="accent">
+                Step {s.n} of {n}
+              </T>
+              <T v="h1" style={{ marginTop: 2 }} numberOfLines={3}>
+                {s.title || STEP_KIND_LABEL[kind]}
+              </T>
+              {s.title ? (
+                <T v="small" color="muted" style={{ marginTop: 2 }}>
+                  {STEP_KIND_LABEL[kind]}
+                </T>
+              ) : null}
+            </View>
+          </View>
+          <T style={{ fontFamily: fonts.body, fontSize: 22, lineHeight: 32, marginTop: 10, color: c.ink }}>{s.text}</T>
           <TimerChips big text={s.text} onStart={(secs, label) => { addTimer(secs, `Step ${s.n} · ${label}`, r.title); haptics.success(); }} />
           {last && r.notes.length ? (
             <View style={{ marginTop: 22, padding: 14, borderRadius: 12, backgroundColor: c.surface }}>
