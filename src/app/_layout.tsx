@@ -4,7 +4,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
-import { View } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -19,6 +19,9 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 function Shell() {
   const { c, dark } = useTheme();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  // On a desktop-sized window (Samsung DeX, tablets in landscape, web) keep the app a readable column.
+  const wide = width > 900;
   useTimerTicker();
   useEffect(() => startSync(), []);
   const navTheme = dark
@@ -26,16 +29,18 @@ function Shell() {
     : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: c.canvas, card: c.surface, text: c.ink, border: c.line, primary: c.accent } };
   return (
     <ThemeProvider value={navTheme}>
-      <View style={{ flex: 1, backgroundColor: c.canvas }}>
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.canvas } }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="recipe/[id]" />
-          <Stack.Screen name="cook/[id]" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
-          <Stack.Screen name="pick" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="pantry" />
-          <Stack.Screen name="history" />
-        </Stack>
-        <Toast bottom={insets.bottom + 90} />
+      <View style={{ flex: 1, backgroundColor: wide ? c.surface2 : c.canvas, alignItems: 'center' }}>
+        <View style={{ flex: 1, width: '100%', maxWidth: wide ? 760 : undefined, backgroundColor: c.canvas, borderLeftWidth: wide ? 1 : 0, borderRightWidth: wide ? 1 : 0, borderColor: c.line }}>
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.canvas } }}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="recipe/[id]" />
+            <Stack.Screen name="cook/[id]" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="pick" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="pantry" />
+            <Stack.Screen name="history" />
+          </Stack>
+          <Toast bottom={insets.bottom + 90} />
+        </View>
       </View>
       <StatusBar style={dark ? 'light' : 'dark'} />
     </ThemeProvider>

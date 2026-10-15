@@ -14,7 +14,7 @@ export function Sheet({ open, onClose, title, children, scroll = true }: { open:
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.root}>
         <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: c.overlay }]} onPress={onClose} accessibilityLabel="Close" />
-        <View style={[styles.panel, { backgroundColor: c.surface, paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <View style={[styles.panel, { backgroundColor: c.surface, paddingBottom: Math.max(insets.bottom, 16), width: '100%', maxWidth: 760, alignSelf: 'center' }]}>
           <View style={[styles.grip, { backgroundColor: c.line }]} />
           {title ? (
             <View style={styles.head}>

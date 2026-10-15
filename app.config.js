@@ -10,5 +10,5 @@ module.exports = ({ config }) => ({
   ...config,
   android: { ...config.android, ...(hasAndroid ? { googleServicesFile: './google-services.json' } : {}) },
   ios: { ...config.ios, ...(hasIos ? { googleServicesFile: './GoogleService-Info.plist' } : {}) },
-  plugins: [...(config.plugins || []), ...(hasAndroid || hasIos ? ['@react-native-google-signin/google-signin'] : [])],
+  plugins: [...(config.plugins || []), './plugins/withDisplayMetricsSync', ...(hasAndroid || hasIos ? ['@react-native-google-signin/google-signin'] : [])],
 });
